@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bóveda Celeste Realista e Interactiva</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #02020a;
+  --bg-panel: rgba(3, 5, 22, 0.93);
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.16);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-muted: rgba(255, 255, 255, 0.35);
+  --accent: #68b8dd;
+  --accent-glow: rgba(126, 207, 179, 0.3);
+  --blue-glow: rgba(144, 200, 255, 0.25);
+  --yellow-glow: rgba(255, 232, 176, 0.25);
+  --red-glow: rgba(255, 102, 51, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-deep);
+  font-family: 'Outfit', system-ui, sans-serif;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  color: var(--text-primary);
+}
+
+#wrap {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+canvas:active {
+  cursor: grabbing;
+}
+
+/* ── HUD superior: Filtros de estrellas ── */
+#hud {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  z-index: 10;
+}
+
+#search-box{
+
+  position:absolute;
+
+  top:70px;
+  left:16px;
+
+  display:flex;
+  gap:6px;
+
+  z-index:20;
+}
+
+#star-search{
+
+  width:220px;
+
+  padding:10px 12px;
+
+  border-radius:10px;
+
+  border:1px solid rgba(255,255,255,.1);
+
+  background:rgba(3,5,22,.85);
+
+  color:white;
+
+  outline:none;
+}
+
+#search-btn{
+
+  border:none;
+
+  border-radius:10px;
+
+  padding:0 14px;
+
+  cursor:pointer;
+
+  background:var(--accent);
+}
+
+.ftag {
+  font-size: 11px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  background: rgba(2, 4, 18, 0.6);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: .04em;
+  font-weight: 500;
+}
+
+.ftag:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.ftag.on {
+  color: #000;
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+  font-weight: 600;
+}
+
+#title-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  z-index: 10;
+  background: rgba(2, 4, 18, 0.4);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+/* ── Panel de Control Flotante (Configuración) ── */
+#controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 280px;
+  background: rgba(3, 5, 22, 0.82);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 16px;
+  z-index: 15;
+  transition: opacity 0.3s, transform 0.3s;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.control-section {
+  margin-bottom: 12px;
+}
+
+.control-section:last-child {
+  margin-bottom: 0;
+}
+
+.control-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.control-row:last-child {
+  margin-bottom: 0;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: .2s;
+  border-radius: 20px;
+  border: 1px solid var(--border-light);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-secondary);
+  transition: .2s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+input:checked + .slider:before {
+  transform: translateX(14px);
+  background-color: #000;
+}
+
+/* Toggle del Modo de Vista */
+.mode-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 3px;
+  border: 1px solid var(--border-light);
+}
+
+.mode-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.mode-btn.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ── Panel lateral de detalles de la estrella ── */
+#panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-light);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 20;
+  padding: 24px 20px;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6);
+}
+
+#panel.open {
+  transform: translateX(0);
+}
+
+#panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+#panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+
+#close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+#close-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.p-star-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.p-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.p-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.p-spectral {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.p-type-badge {
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-left: auto;
+  flex-shrink: 0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-muted);
+  margin: 20px 0 8px;
+  font-weight: 700;
+}
+
+.p-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.p-metric {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.p-metric-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.p-metric-val {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+}
+
+.comp-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.comp-name {
+  font-size: 11px;
+  color: var(--text-secondary);
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.comp-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.comp-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.comp-pct {
+  font-size: 11px;
+  color: var(--text-muted);
+  width: 36px;
+  text-align: right;
+  font-family: 'Space Mono', monospace;
+}
+
+.life-bar-wrap {
+  margin-bottom: 4px;
+}
+
+.life-bar-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.life-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.life-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.planet-block {
+  margin-top: 6px;
+  padding: 12px;
+  background: rgba(126, 207, 179, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(126, 207, 179, 0.12);
+}
+
+.planet-name-row {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.planet-badge {
+  display: inline-block;
+  font-size: 9px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(126, 207, 179, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(126, 207, 179, 0.2);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.planet-no {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.p-note {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+/* ── Hint tooltip ── */
+#hint {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  min-width: 170px;
+  max-width: 220px;
+  background: rgba(3, 5, 22, 0.9);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 10px 12px;
+  z-index: 15;
+  font-size: 12px;
+  color: var(--text-secondary);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+}
+
+#hint.vis {
+  opacity: 1;
+}
+
+#hint strong {
+  color: #fff;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 3px;
+  font-size: 13px;
+}
+
+#hint span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ── Instrucciones inferiores ── */
+#instruction {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 10;
+  background: rgba(2, 4, 18, 0.4);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  
+  <div id="hud">
+    <span class="ftag on" data-f="Todas">Todas las estrellas</span>
+    <span class="ftag" data-f="Enana">Enanas</span>
+    <span class="ftag" data-f="Gigante">Gigantes</span>
+    <span class="ftag" data-f="Supergigante">Supergigantes</span>
+    <span class="ftag" data-f="Binaria">Sistemas Múltiples</span>
+  </div>
+  
+  <div id="search-box">
+
+  <input
+    type="text"
+    id="star-search"
+    placeholder="Buscar estrella..."
+  >
+
+  <button id="search-btn">
+    🔍
+  </button>
+
+</div>
+
+  <div id="title-badge">Bóveda Celeste Realista</div>
+  
+  <!-- Controles flotantes -->
+  <div id="controls">
+    <div class="control-section">
+      <div class="control-title">Modo de Vista</div>
+      <div class="mode-toggle">
+        <button id="btn-mode-globe" class="mode-btn active" onclick="setViewMode('globe')">Globo Celeste</button>
+        <button id="btn-mode-sky" class="mode-btn" onclick="setViewMode('sky')">Planetario (Cúpula)</button>
+      </div>
+    </div>
+    
+    <div class="control-section">
+      <div class="control-title">Elementos Celestes</div>
+      <div class="control-row">
+        <span>Líneas de Constelaciones</span>
+        <label class="switch">
+          <input type="checkbox" id="chk-const-lines" checked onchange="toggleOpt('constLines')">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Nombres de Constelaciones</span>
+        <label class="switch">
+          <input type="checkbox" id="chk-const-labels" checked onchange="toggleOpt('constLabels')">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Vía Láctea (Polvo y Fiel)</span>
+        <label class="switch">
+          <input type="checkbox" id="chk-milky-way" checked onchange="toggleOpt('milkyWay')">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Cúmulos y Nebulosas (DSOs)</span>
+        <label class="switch">
+          <input type="checkbox" id="chk-dsos" checked onchange="toggleOpt('dsos')">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <div class="control-title">Grillas de Coordenadas</div>
+      <div class="control-row">
+        <span>Grilla Ecuatorial</span>
+        <label class="switch">
+          <input type="checkbox" id="chk-grid-eq" onchange="toggleOpt('gridEq')">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Eclíptica (Sol) y Ecuador Gal.</span>
+        <label class="switch">
+          <input type="checkbox" id="chk-grid-ec" onchange="toggleOpt('gridEc')">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <div class="control-title">Dinámicas</div>
+      <div class="control-row">
+        <span>Auto-rotación (Tiempo)</span>
+        <label class="switch">
+          <input type="checkbox" id="chk-autorot" checked onchange="toggleOpt('autoRot')">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Centelleo de estrellas</span>
+        <label class="switch">
+          <input type="checkbox" id="chk-twinkle" checked onchange="toggleOpt('twinkle')">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div id="hint"><strong id="hint-name"></strong><span id="hint-type"></span></div>
+  
+  <div id="panel">
+    <button id="close-btn">✕</button>
+    <div id="panel-content">
+      <p style="color:rgba(255,255,255,0.3);font-size:12px;margin-top:40px;text-align:center;">Selecciona una estrella o nebulosa para ver su ficha técnica.</p>
+    </div>
+  </div>
+  
+  <div id="instruction">Arrastra para rotar · Rueda = zoom · Clic = ficha</div>
+</div>
+
+<script>
+// Catálogo ampliado de estrellas con Ascensión Recta (ra_h: 0-24h) y Declinación (dec_d: -90° a +90°) reales
+const STARS=[
+  {name:"Sol",type:"Enana amarilla",spectral:"G2V",constellation:"—",dist_ly:0.000016,temp_k:5778,lum:1,radius:1,mass:1,age_gy:4.6,life_gy:10,app_mag:-26.7,abs_mag:4.83,color:"#FFA020",innerColor:"#FFE060",group:"Enana",ra_h:5.0,dec_d:22.7,
+   comp:[{el:"Hidrógeno",p:73.5,c:"#4e9af1"},{el:"Helio",p:25,c:"#88ddcc"},{el:"Oxígeno",p:0.77,c:"#f1a14e"},{el:"Carbono",p:0.29,c:"#bbb"}],
+   planet:{name:"Tierra",esi:1.0,type:"Terrestre",mass_e:1,radius_e:1,period_d:365,temp_k:288,zone:"Zona habitable",note:"Nuestro hogar. Único mundo conocido con vida activa. Agua líquida y atmósfera equilibrada.",confirmed:true,color:"#4e9af1"},
+   note:"Nuestra estrella. Su posición actual simula la época del solsticio de junio en los límites de Tauro y Géminis.",type_color:"#FFCC60"},
+  
+  {name:"Sírius",type:"Enana blanca-azul",spectral:"A1V",constellation:"Can Mayor",dist_ly:8.6,temp_k:9940,lum:25.4,radius:1.71,mass:2.06,age_gy:0.24,life_gy:1,app_mag:-1.46,abs_mag:1.42,color:"#B8D8FF",innerColor:"#E8F4FF",group:"Enana",ra_h:6.75,dec_d:-16.72,
+   comp:[{el:"Hidrógeno",p:70.4,c:"#4e9af1"},{el:"Helio",p:27.1,c:"#88ddcc"},{el:"Metales",p:2.5,c:"#f1d14e"}],
+   planet:null,planet_note:"Sistema estelar extremadamente joven. El intenso flujo UV de la estrella principal y los tirones de su compañera Sirius B (enana blanca) descartan planetas habitables.",
+   note:"La estrella más brillante de todo el cielo nocturno. Posee una pequeña y densísima compañera enana blanca apodada 'el Cachorro'.",type_color:"#90C8FF"},
+  
+  {name:"Canopo",type:"Supergigante blanca",spectral:"F0Ib",constellation:"Carina",dist_ly:310,temp_k:7400,lum:10700,radius:71,mass:8.5,age_gy:0.025,life_gy:0.04,app_mag:-0.74,abs_mag:-5.71,color:"#FFF8E0",innerColor:"#FFFFFF",group:"Supergigante",ra_h:6.4,dec_d:-52.7,
+   comp:[{el:"Hidrógeno",p:68,c:"#4e9af1"},{el:"Helio",p:29,c:"#88ddcc"},{el:"Metales",p:3,c:"#f1d14e"}],
+   planet:null,planet_note:"Con solo 25 millones de años de edad, no ha habido tiempo para formar sistemas planetarios estables.",
+   note:"La segunda estrella más brillante del cielo. Utilizada como faro de navegación clave en misiones espaciales interplanetarias.",type_color:"#FFF8C0"},
+  
+  {name:"Arcturus",type:"Gigante naranja",spectral:"K1.5III",constellation:"Boyero",dist_ly:36.7,temp_k:4286,lum:170,radius:25.4,mass:1.08,age_gy:7.1,life_gy:0.3,app_mag:-0.05,abs_mag:-0.31,color:"#FF8830",innerColor:"#FFCC70",group:"Gigante",ra_h:14.26,dec_d:19.18,
+   comp:[{el:"Hidrógeno",p:68,c:"#4e9af1"},{el:"Helio",p:29,c:"#88ddcc"},{el:"Oxígeno",p:1.5,c:"#f1a14e"},{el:"Metales",p:1.5,c:"#aaa"}],
+   planet:null,planet_note:"Cualquier exoplaneta rocoso interior habría sido carbonizado o absorbido cuando Arcturus entró en su fase de gigante roja.",
+   note:"La estrella más brillante del hemisferio celeste norte. Posee una altísima velocidad de movimiento propio a través de la galaxia.",type_color:"#FFB060"},
+  
+  {name:"Vega",type:"Enana blanca-azul",spectral:"A0Va",constellation:"Lira",dist_ly:25,temp_k:9602,lum:40.12,radius:2.36,mass:2.1,age_gy:0.455,life_gy:1,app_mag:0.03,abs_mag:0.58,color:"#C0E0FF",innerColor:"#EAF6FF",group:"Enana",ra_h:18.62,dec_d:38.78,
+   comp:[{el:"Hidrógeno",p:71.5,c:"#4e9af1"},{el:"Helio",p:26.3,c:"#88ddcc"},{el:"Metales",p:2.2,c:"#f1d14e"}],
+   planet:null,planet_note:"Posee un disco de polvo muy denso donde podrían estar naciendo protoplanetas, pero es demasiado joven para albergar vida compleja.",
+   note:"Históricamente utilizada como el cero absoluto de referencia para la escala de magnitudes visuales. Rota tan rápido que está achatada en sus polos.",type_color:"#90C8FF"},
+  
+  {name:"Capella",type:"Gigante amarilla",spectral:"G5+G0 III",constellation:"Auriga",dist_ly:42.9,temp_k:4970,lum:79,radius:11.98,mass:2.57,age_gy:0.59,life_gy:1.5,app_mag:0.08,abs_mag:0.29,color:"#FFE050",innerColor:"#FFF8B0",group:"Binaria",ra_h:5.28,dec_d:45.99,
+   comp:[{el:"Hidrógeno",p:69.5,c:"#4e9af1"},{el:"Helio",p:27.9,c:"#88ddcc"},{el:"Metales",p:2.6,c:"#f1d14e"}],
+   planet:null,planet_note:"Las perturbaciones gravitacionales mutuas de este sistema binario cerrado impiden la existencia de órbitas estables en la zona habitable.",
+   note:"Un sistema binario de dos estrellas gigantes amarillas orbitándose mutuamente a solo 100 millones de kilómetros.",type_color:"#FFE080"},
+  
+  {name:"Rigel",type:"Supergigante azul",spectral:"B8Ia",constellation:"Orión",dist_ly:860,temp_k:12100,lum:120000,radius:78.9,mass:21,age_gy:0.008,life_gy:0.008,app_mag:0.13,abs_mag:-7.84,color:"#90C0FF",innerColor:"#C8E4FF",group:"Supergigante",ra_h:5.24,dec_d:-8.2,
+   comp:[{el:"Hidrógeno",p:60,c:"#4e9af1"},{el:"Helio",p:37,c:"#88ddcc"},{el:"Carbono/O",p:3,c:"#c8a0ff"}],
+   planet:null,planet_note:"Radiación ultravioleta abrasadora y potentes vientos estelares hacen inhabitable cualquier entorno cercano.",
+   note:"La estrella más brillante de Orión (el pie izquierdo). Emitirá una supernova en unos pocos millones de años.",type_color:"#90C8FF"},
+  
+  {name:"Betelgeuse",type:"Supergigante roja",spectral:"M1-M2Ia",constellation:"Orión",dist_ly:700,temp_k:3500,lum:126000,radius:887,mass:16.5,age_gy:0.008,life_gy:0.008,app_mag:0.42,abs_mag:-5.85,color:"#FF3808",innerColor:"#FF8840",group:"Supergigante",ra_h:5.92,dec_d:7.41,
+   comp:[{el:"Hidrógeno",p:45,c:"#4e9af1"},{el:"Helio",p:43,c:"#88ddcc"},{el:"Carbono/O",p:12,c:"#f1a14e"}],
+   planet:null,planet_note:"Fase final expansiva. La estrella se ha tragado cualquier planeta interno que hubiese existido originalmente.",
+   note:"Una supergigante roja variable que marca el hombro derecho de Orión. Su tamaño es tan masivo que engulliría la órbita de Júpiter.",type_color:"#FF6633"},
+  
+  {name:"Aldebaran",type:"Gigante roja",spectral:"K5III",constellation:"Tauro",dist_ly:65.1,temp_k:3910,lum:518,radius:44.2,mass:1.16,age_gy:6.4,life_gy:0.3,app_mag:0.85,abs_mag:-0.63,color:"#FF6020",innerColor:"#FFAA50",group:"Gigante",ra_h:4.6,dec_d:16.51,
+   comp:[{el:"Hidrógeno",p:62,c:"#4e9af1"},{el:"Helio",p:33,c:"#88ddcc"},{el:"Metales",p:5,c:"#f1d14e"}],
+   planet:{name:"Aldebaran b",esi:0.12,type:"Júpiter gigante",mass_e:354,radius_e:null,period_d:629,temp_k:480,zone:"Zona caliente",note:"Confirmado en 2015. Un planeta gaseoso gigante que orbita a 1.4 UA de su estrella moribunda.",confirmed:true,color:"#cc8844"},
+   note:"Conocida como 'el ojo del Toro'. Es una gigante roja que se encuentra en la línea de visión del cúmulo de las Híades.",type_color:"#FF8844"},
+  
+  {name:"Espiga",type:"Binaria azul-blanca",spectral:"B1III+B4V",constellation:"Virgo",dist_ly:250,temp_k:22400,lum:20000,radius:7.4,mass:10.25,age_gy:0.012,life_gy:0.02,app_mag:0.97,abs_mag:-3.55,color:"#A0C8FF",innerColor:"#D8ECFF",group:"Binaria",ra_h:13.42,dec_d:-11.16,
+   comp:[{el:"Hidrógeno",p:55,c:"#4e9af1"},{el:"Helio",p:41,c:"#88ddcc"},{el:"Carbono",p:4,c:"#c8a0ff"}],
+   planet:null,planet_note:"Se trata de una binaria muy cerrada y deformada por las fuerzas de marea; las radiaciones masivas destruyen cualquier atmósfera planetaria.",
+   note:"Estrella alfa de Virgo. Sus dos componentes orbitan tan cerca que completan un ciclo en solo 4 días.",type_color:"#90C8FF"},
+  
+  {name:"Antares",type:"Supergigante roja",spectral:"M1.5Iab",constellation:"Escorpio",dist_ly:550,temp_k:3570,lum:75900,radius:700,mass:12,age_gy:0.012,life_gy:0.02,app_mag:0.96,abs_mag:-5.29,color:"#FF2200",innerColor:"#FF7040",group:"Supergigante",ra_h:16.49,dec_d:-26.43,
+   comp:[{el:"Hidrógeno",p:43,c:"#4e9af1"},{el:"Helio",p:44,c:"#88ddcc"},{el:"Carbono/N/O",p:13,c:"#f1a14e"}],
+   planet:null,planet_note:"La extrema inestabilidad de la supergigante y sus violentas eyecciones de masa impiden la formación de biosferas estables.",
+   note:"El 'corazón del Escorpión'. Su nombre proviene del griego antiguo y significa 'el rival de Marte', debido a su intenso color rojizo.",type_color:"#FF6633"},
+  
+  {name:"Fomalhaut",type:"Enana blanca-azul",spectral:"A3V",constellation:"Piscis Austral",dist_ly:25.1,temp_k:8590,lum:16.63,radius:1.84,mass:1.92,age_gy:0.44,life_gy:1.2,app_mag:1.16,abs_mag:1.74,color:"#B0D8FF",innerColor:"#DCEFFF",group:"Enana",ra_h:22.96,dec_d:-29.62,
+   comp:[{el:"Hidrógeno",p:72,c:"#4e9af1"},{el:"Helio",p:25.5,c:"#88ddcc"},{el:"Metales",p:2.5,c:"#f1d14e"}],
+   planet:{name:"Fomalhaut b (Dagon)",esi:0.05,type:"Nube de escombros",mass_e:null,radius_e:null,period_d:1700,temp_k:50,zone:"Cinturón exterior",note:"Originalmente catalogado como exoplaneta, mediciones recientes indican que podría ser una inmensa nube de polvo postcolisión.",confirmed:false,color:"#8899bb"},
+   note:"Famosa por su inmenso anillo de escombros circunestelar apodado 'el Ojo de Sauron'.",type_color:"#90C8FF"},
+  
+  {name:"Polaris",type:"Supergigante amarilla",spectral:"F7Ib",constellation:"Osa Menor",dist_ly:433,temp_k:6015,lum:2500,radius:37.5,mass:4.5,age_gy:0.07,life_gy:0.08,app_mag:1.97,abs_mag:-3.64,color:"#FFE898",innerColor:"#FFFFF0",group:"Supergigante",ra_h:2.53,dec_d:89.26,
+   comp:[{el:"Hidrógeno",p:65,c:"#4e9af1"},{el:"Helio",p:31,c:"#88ddcc"},{el:"Metales",p:4,c:"#f1d14e"}],
+   planet:null,planet_note:"Estrella supergigante pulsante (variable cefeida). Su corta vida y constantes pulsaciones no son aptas para albergar planetas habitables.",
+   note:"La actual estrella polar norte. Se sitúa casi alineada sobre el eje de rotación terrestre, permaneciendo inmóvil mientras el cielo gira.",type_color:"#FFE890"},
+  
+  {name:"Deneb",type:"Supergigante azul-blanca",spectral:"A2Ia",constellation:"Cisne",dist_ly:2615,temp_k:8525,lum:196000,radius:203,mass:19,age_gy:0.01,life_gy:0.01,app_mag:1.25,abs_mag:-8.73,color:"#D0EAFF",innerColor:"#F0F8FF",group:"Supergigante",ra_h:20.69,dec_d:45.28,
+   comp:[{el:"Hidrógeno",p:62,c:"#4e9af1"},{el:"Helio",p:34,c:"#88ddcc"},{el:"Carbono",p:4,c:"#c8a0ff"}],
+   planet:null,planet_note:"Estrella masiva de evolución veloz. Su ciclo total es de apenas 10 millones de años, imposible para procesos prebióticos complejos.",
+   note:"Una de las supergigantes más lejanas visibles a simple vista. Forma parte del asterismo del Triángulo de Verano.",type_color:"#90C8FF"},
+  
+  {name:"Regulus",type:"Enana azul-blanca",spectral:"B7V",constellation:"Leo",dist_ly:79.3,temp_k:12460,lum:316,radius:3.09,mass:3.8,age_gy:1.0,life_gy:0.4,app_mag:1.35,abs_mag:-0.52,color:"#C8E4FF",innerColor:"#E8F4FF",group:"Enana",ra_h:10.14,dec_d:11.97,
+   comp:[{el:"Hidrógeno",p:63,c:"#4e9af1"},{el:"Helio",p:34,c:"#88ddcc"},{el:"Metales",p:3.5,c:"#f1d14e"}],
+   planet:null,planet_note:"Debido a su elevadísima velocidad de giro, la estrella expulsa intensas ondas de radiación polar, esterilizando cualquier disco orbital.",
+   note:"El 'corazón del León'. Su rotación sobre sí misma es tan extrema (cada 15.9 horas) que ha adoptado la forma de un huevo achatado.",type_color:"#90C8FF"},
+
+  // --- ESTRELLAS NUEVAS PARA CONSTELLACIONES REALES ---
+  {name:"Altair",type:"Enana blanca-azul",spectral:"A7V",constellation:"Águila",dist_ly:16.7,temp_k:7700,lum:10.6,radius:1.63,mass:1.79,age_gy:1.2,life_gy:3,app_mag:0.76,abs_mag:2.2,color:"#D0E5FF",innerColor:"#FFFFFF",group:"Enana",ra_h:19.85,dec_d:8.87,
+   comp:[{el:"Hidrógeno",p:72.1,c:"#4e9af1"},{el:"Helio",p:26.4,c:"#88ddcc"},{el:"Metales",p:1.5,c:"#f1d14e"}],
+   planet:null,planet_note:"Su rotación es ultra rápida (9 horas), provocando una fuerza centrífuga que aplana sus polos y desestabiliza cualquier órbita interna.",
+   note:"Esquina sur del Triángulo de Verano. Es una de las estrellas de primera magnitud más cercanas a nuestro Sistema Solar.",type_color:"#90C8FF"},
+
+  {name:"Procyon",type:"Subgigante blanca-amarilla",spectral:"F5IV-V",constellation:"Can Menor",dist_ly:11.4,temp_k:6530,lum:6.93,radius:2.05,mass:1.5,age_gy:1.9,life_gy:2.5,app_mag:0.38,abs_mag:2.68,color:"#FFF5E0",innerColor:"#FFFFFF",group:"Enana",ra_h:7.66,dec_d:5.22,
+   comp:[{el:"Hidrógeno",p:71.8,c:"#4e9af1"},{el:"Helio",p:26.7,c:"#88ddcc"},{el:"Metales",p:1.5,c:"#f1d14e"}],
+   planet:null,planet_note:"La proximidad de Procyon B (enana blanca) genera tirones gravitacionales destructivos en el plano orbital templado.",
+   note:"Es la octava estrella más brillante del cielo nocturno. Forma una de las esquinas del famoso Triángulo de Invierno.",type_color:"#FFE890"},
+
+  {name:"Castor",type:"Sistema múltiple",spectral:"A1V",constellation:"Géminis",dist_ly:51.5,temp_k:9300,lum:30,radius:2.4,mass:2.7,age_gy:0.37,life_gy:1,app_mag:1.58,abs_mag:0.59,color:"#D8ECFF",innerColor:"#FFFFFF",group:"Binaria",ra_h:7.58,dec_d:31.88,
+   comp:[{el:"Hidrógeno",p:71.2,c:"#4e9af1"},{el:"Helio",p:27.1,c:"#88ddcc"},{el:"Metales",p:1.7,c:"#f1d14e"}],
+   planet:null,planet_note:"Un caótico sistema séxtuple. Ningún planeta podría orbitar en zona habitable sin ser expulsado al espacio interestelar.",
+   note:"Representa la cabeza del gemelo Castor en la mitología clásica. A simple vista es una estrella, pero en realidad son seis estrellas ligadas.",type_color:"#90C8FF"},
+
+  {name:"Pollux",type:"Gigante naranja",spectral:"K0III",constellation:"Géminis",dist_ly:33.7,temp_k:4666,lum:43,radius:8.8,mass:1.9,age_gy:0.72,life_gy:2,app_mag:1.14,abs_mag:1.09,color:"#FF9A40",innerColor:"#FFE2A0",group:"Gigante",ra_h:7.75,dec_d:28.02,
+   comp:[{el:"Hidrógeno",p:69.2,c:"#4e9af1"},{el:"Helio",p:28.9,c:"#88ddcc"},{el:"Metales",p:1.9,c:"#f1d14e"}],
+   planet:{name:"Thestias (Pollux b)",esi:0.22,type:"Gigante gaseoso",mass_e:730,radius_e:null,period_d:589,temp_k:350,zone:"Zona templada",note:"Confirmado en 2006. Un planeta gigante gaseoso situado a una distancia similar a la órbita de Marte respecto a su gigante naranja parenta.",confirmed:true,color:"#ccaa66"},
+   note:"La cabeza del gemelo Pólux. Es la estrella gigante roja/naranja más cercana al Sol.",type_color:"#FFB060"},
+
+  {name:"Bellatrix",type:"Gigante azul",spectral:"B2III",constellation:"Orión",dist_ly:250,temp_k:22000,lum:9200,radius:5.7,mass:8.6,age_gy:0.02,life_gy:0.05,app_mag:1.64,abs_mag:-2.72,color:"#A5CCFF",innerColor:"#FFFFFF",group:"Gigante",ra_h:5.42,dec_d:6.35,
+   comp:[{el:"Hidrógeno",p:65.0,c:"#4e9af1"},{el:"Helio",p:32.0,c:"#88ddcc"},{el:"Metales",p:3.0,c:"#f1d14e"}],
+   planet:null,planet_note:"Estrella masiva de temperatura extrema. Su vida útil total es de solo 50 millones de años, lo que descarta vida biológica estable.",
+   note:"Marca el hombro izquierdo de la figura mítica de Orión. Es una gigante azul brillante y masiva en transición rápida.",type_color:"#90C8FF"},
+
+  {name:"Saiph",type:"Supergigante azul",spectral:"B0.5Ia",constellation:"Orión",dist_ly:720,temp_k:26500,lum:56000,radius:22.2,mass:15.5,age_gy:0.011,life_gy:0.015,app_mag:2.06,abs_mag:-4.65,color:"#95C0FF",innerColor:"#FFFFFF",group:"Supergigante",ra_h:5.79,dec_d:-9.67,
+   comp:[{el:"Hidrógeno",p:63.0,c:"#4e9af1"},{el:"Helio",p:33.5,c:"#88ddcc"},{el:"Metales",p:3.5,c:"#f1d14e"}],
+   planet:null,planet_note:"Emite la mayor parte de su radiación en el rango invisible ultravioleta, lo que destruiría el ADN o compuestos orgánicos conocidos.",
+   note:"La rodilla derecha del gigante cazador Orión. Es una estrella supergigante caliente de gran luminosidad.",type_color:"#90C8FF"},
+
+  {name:"Alnilam",type:"Supergigante azul",spectral:"B0Ia",constellation:"Orión",dist_ly:1340,temp_k:27500,lum:537000,radius:42,mass:40,age_gy:0.005,life_gy:0.006,app_mag:1.69,abs_mag:-6.38,color:"#90C0FF",innerColor:"#FFFFFF",group:"Supergigante",ra_h:5.60,dec_d:-1.20,
+   comp:[{el:"Hidrógeno",p:58.0,c:"#4e9af1"},{el:"Helio",p:38.0,c:"#88ddcc"},{el:"Metales",p:4.0,c:"#f1d14e"}],
+   planet:null,planet_note:"Una supergigante de 40 masas solares. Su entorno está devastado por vientos estelares a velocidades supersónicas.",
+   note:"La estrella central del Cinturón de Orión (el asterismo de las Tres Marías). Destaca por su inmenso brillo intrínseco.",type_color:"#90C8FF"},
+
+  {name:"Alnitak",type:"Supergigante azul",spectral:"O9.7Ib",constellation:"Orión",dist_ly:700,temp_k:29500,lum:250000,radius:20,mass:33,age_gy:0.006,life_gy:0.007,app_mag:1.74,abs_mag:-5.3,color:"#85B5FF",innerColor:"#FFFFFF",group:"Supergigante",ra_h:5.68,dec_d:-1.94,
+   comp:[{el:"Hidrógeno",p:57.0,c:"#4e9af1"},{el:"Helio",p:38.5,c:"#88ddcc"},{el:"Metales",p:4.5,c:"#f1d14e"}],
+   planet:null,planet_note:"Su radiación de alta energía destruye cualquier disco proto-planetario en escalas de millones de años.",
+   note:"Estrella oriental del Cinturón de Orión. Es la estrella de tipo espectral O (la clase más caliente y rara) más brillante del cielo nocturno.",type_color:"#90C8FF"},
+
+  {name:"Mintaka",type:"Supergigante azul",spectral:"O9.5II",constellation:"Orión",dist_ly:900,temp_k:29500,lum:190000,radius:16.5,mass:24,age_gy:0.007,life_gy:0.008,app_mag:2.23,abs_mag:-4.99,color:"#85B5FF",innerColor:"#FFFFFF",group:"Binaria",ra_h:5.53,dec_d:-0.30,
+   comp:[{el:"Hidrógeno",p:59.0,c:"#4e9af1"},{el:"Helio",p:37.0,c:"#88ddcc"},{el:"Metales",p:4.0,c:"#f1d14e"}],
+   planet:null,planet_note:"Binaria eclipsante múltiple con períodos orbitales de pocos días, totalmente hostil para planetas templados.",
+   note:"La estrella del extremo occidental del Cinturón de Orión. Se encuentra casi exactamente sobre el ecuador celeste de la Tierra.",type_color:"#90C8FF"},
+
+  {name:"Dubhe",type:"Gigante naranja",spectral:"K0III",constellation:"Osa Mayor",dist_ly:123,temp_k:4660,lum:316,radius:30,mass:4.25,age_gy:0.35,life_gy:0.5,app_mag:1.79,abs_mag:-1.1,color:"#FFA550",innerColor:"#FFE5B0",group:"Gigante",ra_h:11.06,dec_d:61.75,
+   comp:[{el:"Hidrógeno",p:69.0,c:"#4e9af1"},{el:"Helio",p:28.5,c:"#88ddcc"},{el:"Metales",p:2.5,c:"#f1d14e"}],
+   planet:null,planet_note:"El cese de fusión de hidrógeno y su posterior expansión térmica habrían destruido las biosferas planetarias interiores.",
+   note:"Estrella alfa de la Osa Mayor. Junto con Merak, sirve para trazar la línea imaginaria que apunta hacia Polaris.",type_color:"#FFB060"},
+
+  {name:"Merak",type:"Enana blanca-azul",spectral:"A1V",constellation:"Osa Mayor",dist_ly:79,temp_k:9355,lum:63,radius:2.84,mass:2.7,age_gy:0.35,life_gy:1,app_mag:2.34,abs_mag:0.41,color:"#C8E0FF",innerColor:"#FFFFFF",group:"Enana",ra_h:11.03,dec_d:56.38,
+   comp:[{el:"Hidrógeno",p:71.0,c:"#4e9af1"},{el:"Helio",p:27.4,c:"#88ddcc"},{el:"Metales",p:1.6,c:"#f1d14e"}],
+   planet:null,planet_note:"Su alta radiación y edad juvenil sugieren que un sistema planetario aún estaría en fases violentas de bombardeo primario.",
+   note:"Estrella del 'Carro' de la Osa Mayor. Forma las dos estrellas guías que marcan la dirección al norte celeste.",type_color:"#90C8FF"},
+
+  {name:"Phecda",type:"Enana blanca-azul",spectral:"A0V",constellation:"Osa Mayor",dist_ly:83,temp_k:9355,lum:64,radius:3.04,mass:2.94,age_gy:0.35,life_gy:1,app_mag:2.44,abs_mag:0.45,color:"#C8E0FF",innerColor:"#FFFFFF",group:"Enana",ra_h:11.89,dec_d:53.69,
+   comp:[{el:"Hidrógeno",p:71.2,c:"#4e9af1"},{el:"Helio",p:27.2,c:"#88ddcc"},{el:"Metales",p:1.6,c:"#f1d14e"}],
+   planet:null,planet_note:"Estrella caliente en rápida rotación que cuenta con un disco circunestelar de polvo frío e inestable.",
+   note:"Ubicada en la base inferior izquierda del carro de la Osa Mayor. Pertenece a la Asociación Estelar de la Osa Mayor.",type_color:"#90C8FF"},
+
+  {name:"Megrez",type:"Enana blanca-azul",spectral:"A3V",constellation:"Osa Mayor",dist_ly:81,temp_k:9480,lum:14,radius:1.4,mass:1.63,age_gy:0.35,life_gy:1.5,app_mag:3.32,abs_mag:1.33,color:"#D2E6FF",innerColor:"#FFFFFF",group:"Enana",ra_h:12.25,dec_d:57.03,
+   comp:[{el:"Hidrógeno",p:72.5,c:"#4e9af1"},{el:"Helio",p:26.1,c:"#88ddcc"},{el:"Metales",p:1.4,c:"#f1d14e"}],
+   planet:null,planet_note:"Aunque es la estrella menos masiva del carro, su fuerte emisión luminosa ultravioleta dificulta la formación de biosferas estables.",
+   note:"Une el cuerpo del carro con la cola o mango. Es la estrella más tenue de las siete del famoso asterismo.",type_color:"#90C8FF"},
+
+  {name:"Alioth",type:"Subgigante blanca-azul",spectral:"A1III-IVp",constellation:"Osa Mayor",dist_ly:81,temp_k:9080,lum:108,radius:4.14,mass:2.91,age_gy:0.35,life_gy:1,app_mag:1.76,abs_mag:-0.22,color:"#C5E0FF",innerColor:"#FFFFFF",group:"Enana",ra_h:12.90,dec_d:55.96,
+   comp:[{el:"Hidrógeno",p:70.8,c:"#4e9af1"},{el:"Helio",p:27.6,c:"#88ddcc"},{el:"Metales",p:1.6,c:"#f1d14e"}],
+   planet:null,planet_note:"Es una estrella con peculiaridades espectrales ('Ap'), caracterizada por un campo magnético colosal que desintegra atmósferas.",
+   note:"La estrella más brillante de la constelación de la Osa Mayor y la cola del Gran Oso.",type_color:"#90C8FF"},
+
+  {name:"Mizar",type:"Sistema múltiple",spectral:"A1V",constellation:"Osa Mayor",dist_ly:83,temp_k:9000,lum:33.3,radius:2.4,mass:2.2,age_gy:0.35,life_gy:1,app_mag:2.23,abs_mag:0.33,color:"#C8E0FF",innerColor:"#FFFFFF",group:"Binaria",ra_h:13.40,dec_d:54.92,
+   comp:[{el:"Hidrógeno",p:71.3,c:"#4e9af1"},{el:"Helio",p:27.1,c:"#88ddcc"},{el:"Metales",p:1.6,c:"#f1d14e"}],
+   planet:null,planet_note:"Sistema quíntuple en órbita cerrada. La estabilidad térmica en las superficies planetarias es completamente nula.",
+   note:"Famosa estrella doble óptica que forma pareja con Alcor. Resolverlas a simple vista era prueba clásica de agudeza visual.",type_color:"#90C8FF"},
+
+  {name:"Alkaid",type:"Secuencia principal azul",spectral:"B3V",constellation:"Osa Mayor",dist_ly:101,temp_k:15540,lum:594,radius:3.2,mass:6.1,age_gy:0.01,life_gy:0.08,app_mag:1.85,abs_mag:-0.6,color:"#A0CAFF",innerColor:"#FFFFFF",group:"Enana",ra_h:13.79,dec_d:49.31,
+   comp:[{el:"Hidrógeno",p:67.0,c:"#4e9af1"},{el:"Helio",p:30.8,c:"#88ddcc"},{el:"Metales",p:2.2,c:"#f1d14e"}],
+   planet:null,planet_note:"Fuerte bombardeo estelar y calor extremo. Es una estrella muy joven que funde hidrógeno a un ritmo acelerado.",
+   note:"Situada en el extremo final de la cola de la Osa Mayor. Es una de las estrellas más calientes visibles a simple vista en el cielo boreal.",type_color:"#90C8FF"},
+
+  {name:"Schedar",type:"Gigante naranja",spectral:"K0III",constellation:"Casiopea",dist_ly:228,temp_k:4530,lum:676,radius:45.4,mass:3.98,age_gy:0.22,life_gy:0.4,app_mag:2.24,abs_mag:-1.99,color:"#FFA448",innerColor:"#FFE3B0",group:"Gigante",ra_h:0.68,dec_d:56.54,
+   comp:[{el:"Hidrógeno",p:68.5,c:"#4e9af1"},{el:"Helio",p:29.0,c:"#88ddcc"},{el:"Metales",p:2.5,c:"#f1d14e"}],
+   planet:null,planet_note:"Su envoltura exterior expandida emite fuertes vientos de carbono que cubrirían de ceniza cualquier biosfera terrestre.",
+   note:"Estrella alfa de la constelación circumpolar norte de Casiopea, que tiene forma de letra W o M.",type_color:"#FFB060"},
+
+  {name:"Caph",type:"Gigante blanca",spectral:"F2III",constellation:"Casiopea",dist_ly:54,temp_k:7090,lum:27.3,radius:3.43,mass:1.91,age_gy:1.1,life_gy:2,app_mag:2.28,abs_mag:1.16,color:"#FFF2D8",innerColor:"#FFFFFF",group:"Gigante",ra_h:0.15,dec_d:59.15,
+   comp:[{el:"Hidrógeno",p:71.9,c:"#4e9af1"},{el:"Helio",p:26.5,c:"#88ddcc"},{el:"Metales",p:1.6,c:"#f1d14e"}],
+   planet:null,planet_note:"Su pulso periódico de brillo (variable Delta Scuti) causa constantes cambios climáticos letales para la vida.",
+   note:"Estrella beta de Casiopea, marca la punta derecha de la letra W.",type_color:"#FFE890"},
+
+  {name:"Cih",type:"Subgigante azul eruptiva",spectral:"B0IV:e",constellation:"Casiopea",dist_ly:610,temp_k:25000,lum:34000,radius:10,mass:17,age_gy:0.008,life_gy:0.012,app_mag:2.15,abs_mag:-4.22,color:"#95C0FF",innerColor:"#FFFFFF",group:"Gigante",ra_h:0.95,dec_d:60.72,
+   comp:[{el:"Hidrógeno",p:64.0,c:"#4e9af1"},{el:"Helio",p:32.4,c:"#88ddcc"},{el:"Metales",p:3.6,c:"#f1d14e"}],
+   planet:null,planet_note:"Estrella inestable sujeta a erupciones masivas. El gas eyectado forma anillos a su alrededor que perturban órbitas planetarias.",
+   note:"Una subgigante azul de giro rapidísimo. Ha servido como estrella guía en satélites científicos debido a su espectro estable.",type_color:"#90C8FF"},
+
+  {name:"Ruchbah",type:"Subgigante blanca",spectral:"A5III",constellation:"Casiopea",dist_ly:99,temp_k:8400,lum:18,radius:3.9,mass:2.5,age_gy:0.35,life_gy:1.2,app_mag:2.68,abs_mag:0.24,color:"#EAF2FF",innerColor:"#FFFFFF",group:"Enana",ra_h:1.43,dec_d:60.23,
+   comp:[{el:"Hidrógeno",p:71.5,c:"#4e9af1"},{el:"Helio",p:26.8,c:"#88ddcc"},{el:"Metales",p:1.7,c:"#f1d14e"}],
+   planet:null,planet_note:"Se trata de una binaria eclipsante. Las variaciones estacionales en cualquier exomundo serían demasiado severas.",
+   note:"Estrella delta de Casiopea, ubicada en la parte inferior izquierda de la figura en W.",type_color:"#90C8FF"},
+
+  {name:"Segin",type:"Gigante azul",spectral:"B3V",constellation:"Casiopea",dist_ly:440,temp_k:15070,lum:725,radius:6.0,mass:5.4,age_gy:0.015,life_gy:0.08,app_mag:3.35,abs_mag:-2.31,color:"#A5CAFF",innerColor:"#FFFFFF",group:"Gigante",ra_h:1.90,dec_d:63.67,
+   comp:[{el:"Hidrógeno",p:67.2,c:"#4e9af1"},{el:"Helio",p:30.5,c:"#88ddcc"},{el:"Metales",p:2.3,c:"#f1d14e"}],
+   planet:null,planet_note:"Fase evolutiva intermedia muy caótica. La radiación ultravioleta impide procesos orgánicos templados.",
+   note:"Estrella épsilon de Casiopea, marca la punta del extremo izquierdo de la constelación.",type_color:"#90C8FF"},
+
+  {name:"Acrux",type:"Binaria azul-blanca",spectral:"B0.5IV",constellation:"Cruz del Sur",dist_ly:320,temp_k:28000,lum:25000,radius:7.8,mass:14,age_gy:0.01,life_gy:0.015,app_mag:0.77,abs_mag:-4.14,color:"#85B5FF",innerColor:"#FFFFFF",group:"Binaria",ra_h:12.44,dec_d:-63.10,
+   comp:[{el:"Hidrógeno",p:61.0,c:"#4e9af1"},{el:"Helio",p:35.0,c:"#88ddcc"},{el:"Metales",p:4.0,c:"#c8a0ff"}],
+   planet:null,planet_note:"Estrella gigante de clase O. El viento solar erosiona cualquier atmósfera delgada a velocidades supersónicas.",
+   note:"La estrella más brillante de la constelación de la Cruz del Sur y la más meridional de primera magnitud del firmamento.",type_color:"#90C8FF"},
+
+  {name:"Mimosa",type:"Gigante azul",spectral:"B0.5III",constellation:"Cruz del Sur",dist_ly:280,temp_k:27000,lum:34000,radius:8.4,mass:16,age_gy:0.01,life_gy:0.012,app_mag:1.25,abs_mag:-3.92,color:"#8ABAFB",innerColor:"#FFFFFF",group:"Gigante",ra_h:12.79,dec_d:-59.68,
+   comp:[{el:"Hidrógeno",p:62.0,c:"#4e9af1"},{el:"Helio",p:34.2,c:"#88ddcc"},{el:"Metales",p:3.8,c:"#c8a0ff"}],
+   planet:null,planet_note:"Variable de tipo Beta Cephei. Las pulsaciones periódicas de calor impiden climas planetarios estables.",
+   note:"Estrella beta de la Cruz del Sur. Es una de las gigantes azules más calientes en nuestro entorno de la Vía Láctea.",type_color:"#90C8FF"},
+
+  {name:"Gacrux",type:"Gigante roja",spectral:"M3.5III",constellation:"Cruz del Sur",dist_ly:88,temp_k:3626,lum:1500,radius:84,mass:1.5,age_gy:3.0,life_gy:5,app_mag:1.59,abs_mag:-0.56,color:"#FF5220",innerColor:"#FFAA60",group:"Gigante",ra_h:12.52,dec_d:-57.11,
+   comp:[{el:"Hidrógeno",p:60.0,c:"#4e9af1"},{el:"Helio",p:34.0,c:"#88ddcc"},{el:"Oxígeno",p:3.0,c:"#f1a14e"},{el:"Metales",p:3.0,c:"#aaa"}],
+   planet:null,planet_note:"La estrella moribunda expulsa de forma masiva su capa exterior, inundando la vecindad con gases asfixiantes y radiación infrarroja extrema.",
+   note:"La gigante roja más cercana al Sol. Forma el extremo superior de la Cruz del Sur.",type_color:"#FF6633"},
+
+  {name:"Imai",type:"Subgigante azul",spectral:"B2IV",constellation:"Cruz del Sur",dist_ly:360,temp_k:22570,lum:5600,radius:5.4,mass:8.9,age_gy:0.018,life_gy:0.04,app_mag:2.78,abs_mag:-2.43,color:"#A5CCFF",innerColor:"#FFFFFF",group:"Gigante",ra_h:12.25,dec_d:-58.75,
+   comp:[{el:"Hidrógeno",p:66.0,c:"#4e9af1"},{el:"Helio",p:31.2,c:"#88ddcc"},{el:"Metales",p:2.8,c:"#f1d14e"}],
+   planet:null,planet_note:"Su altísima radiación UV ionizaría y destruiría cualquier rastro de agua líquida en un planeta rocoso cercano.",
+   note:"Estrella delta de la Cruz del Sur. Es una subgigante de rápida evolución estelar.",type_color:"#90C8FF"},
+
+  // --- ESTRELLAS NUEVAS ---
+  {name:"Elnath",type:"Gigante azul-blanca",spectral:"B7III",constellation:"Tauro",dist_ly:134,temp_k:13600,lum:700,radius:4.2,mass:4.5,age_gy:0.1,life_gy:0.3,app_mag:1.65,abs_mag:-1.37,color:"#9BB2FF",group:"Gigante",ra_h:5.43,dec_d:28.6,
+   comp:[{el:"Hidrógeno",p:70.5,c:"#4e9af1"},{el:"Helio",p:28.0,c:"#88ddcc"},{el:"Metales",p:1.5,c:"#f1d14e"}],planet:null,
+   note:"Comparte la frontera entre Tauro y Auriga. Históricamente considerada parte de ambas constelaciones.",type_color:"#90C8FF"},
+
+  {name:"Alheka",type:"Enana azul-blanca",spectral:"B2IV",constellation:"Tauro",dist_ly:440,temp_k:22000,lum:5000,radius:5.5,mass:8.0,age_gy:0.02,life_gy:0.08,app_mag:3.0,abs_mag:-2.6,color:"#9BB2FF",group:"Enana",ra_h:5.63,dec_d:21.1,
+   comp:[{el:"Hidrógeno",p:67,c:"#4e9af1"},{el:"Helio",p:31,c:"#88ddcc"},{el:"Metales",p:2,c:"#f1d14e"}],planet:null,
+   note:"Estrella binaria espectroscópica en el cuerno sur de la constelación de Tauro.",type_color:"#90C8FF"},
+
+  {name:"Adhara",type:"Supergigante azul",spectral:"B2Ib",constellation:"Can Mayor",dist_ly:430,temp_k:22900,lum:38700,radius:13.9,mass:12.5,age_gy:0.015,life_gy:0.02,app_mag:1.5,abs_mag:-4.1,color:"#90C0FF",group:"Supergigante",ra_h:6.98,dec_d:-28.97,
+   comp:[{el:"Hidrógeno",p:64,c:"#4e9af1"},{el:"Helio",p:33,c:"#88ddcc"},{el:"Metales",p:3,c:"#f1d14e"}],planet:null,
+   note:"La segunda estrella más brillante de Canis Major. Hace unos millones de años fue la estrella más brillante de todo el cielo.",type_color:"#90C8FF"},
+
+  {name:"Wezen",type:"Supergigante amarilla",spectral:"F8Ia",constellation:"Can Mayor",dist_ly:1800,temp_k:6390,lum:50000,radius:237,mass:17,age_gy:0.012,life_gy:0.015,app_mag:1.83,abs_mag:-6.87,color:"#FFF5DF",group:"Supergigante",ra_h:7.14,dec_d:-26.4,
+   comp:[{el:"Hidrógeno",p:60,c:"#4e9af1"},{el:"Helio",p:36,c:"#88ddcc"},{el:"Carbono/O",p:4,c:"#c8a0ff"}],planet:null,
+   note:"Estrella supergigante extremadamente masiva. Si estuviera en el lugar del Sol, llegaría casi hasta la órbita de la Tierra.",type_color:"#FFE890"},
+
+  {name:"Murzim",type:"Gigante azul-blanca",spectral:"B1III",constellation:"Can Mayor",dist_ly:500,temp_k:25800,lum:34000,radius:9.7,mass:13.5,age_gy:0.012,life_gy:0.015,app_mag:1.98,abs_mag:-3.95,color:"#8BB2FF",group:"Gigante",ra_h:6.38,dec_d:-17.96,
+   comp:[{el:"Hidrógeno",p:63,c:"#4e9af1"},{el:"Helio",p:33,c:"#88ddcc"},{el:"Metales",p:4,c:"#f1d14e"}],planet:null,
+   note:"Estrella pulsante variable del tipo Beta Cephei, cuyo nombre significa 'El Heraldo' porque anuncia la salida de Sirius.",type_color:"#90C8FF"},
+
+  {name:"Sheliak",type:"Binaria interactiva",spectral:"B7V",constellation:"Lira",dist_ly:960,temp_k:13000,lum:6500,radius:15,mass:13,age_gy:0.025,life_gy:0.03,app_mag:3.52,abs_mag:-3.9,color:"#9BB2FF",group:"Binaria",ra_h:18.83,dec_d:33.36,
+   comp:[{el:"Hidrógeno",p:68,c:"#4e9af1"},{el:"Helio",p:30.8,c:"#88ddcc"},{el:"Metales",p:1.2,c:"#f1d14e"}],planet:null,
+   note:"Una famosa estrella binaria de contacto que intercambia masa continuamente, creando un disco de acreción gigante a su alrededor.",type_color:"#90C8FF"},
+
+  {name:"Sulafat",type:"Gigante azul-blanca",spectral:"B9III",constellation:"Lira",dist_ly:620,temp_k:10000,lum:1100,radius:15,mass:5.8,age_gy:0.15,life_gy:0.2,app_mag:3.25,abs_mag:-3.1,color:"#A5C8FF",group:"Gigante",ra_h:18.98,dec_d:32.68,
+   comp:[{el:"Hidrógeno",p:70,c:"#4e9af1"},{el:"Helio",p:28.5,c:"#88ddcc"},{el:"Metales",p:1.5,c:"#f1d14e"}],planet:null,
+   note:"Una gigante brillante azul que está en proceso de convertirse en gigante roja.",type_color:"#90C8FF"},
+
+  {name:"Sadr",type:"Supergigante amarilla",spectral:"F8Ib",constellation:"Cisne",dist_ly:1500,temp_k:6100,lum:33000,radius:150,mass:12,age_gy:0.012,life_gy:0.02,app_mag:2.23,abs_mag:-6.12,color:"#FFF5DF",group:"Supergigante",ra_h:20.37,dec_d:40.26,
+   comp:[{el:"Hidrógeno",p:61,c:"#4e9af1"},{el:"Helio",p:35.5,c:"#88ddcc"},{el:"Metales",p:3.5,c:"#f1d14e"}],planet:null,
+   note:"Ubicada en el pecho del Cisne, justo en el cruce de la Cruz del Norte. Está rodeada de inmensas nubes de gas (IC 1318).",type_color:"#FFE890"},
+
+  {name:"Albireo",type:"Binaria gigante",spectral:"K3II+B9V",constellation:"Cisne",dist_ly:430,temp_k:4270,lum:1200,radius:70,mass:5.0,age_gy:0.1,life_gy:0.25,app_mag:3.08,abs_mag:-2.45,color:"#FFA840",innerColor:"#90C0FF",group:"Binaria",ra_h:19.51,dec_d:27.96,
+   comp:[{el:"Hidrógeno",p:66,c:"#4e9af1"},{el:"Helio",p:31.5,c:"#88ddcc"},{el:"Metales",p:2.5,c:"#f1d14e"}],planet:null,
+   note:"Considerada la estrella doble más hermosa del cielo debido al fuerte contraste cromático de sus componentes (dorado y zafiro).",type_color:"#FFA840"},
+
+  {name:"Gienah",type:"Gigante naranja",spectral:"K0III",constellation:"Cisne",dist_ly:72,temp_k:4700,lum:62,radius:11,mass:2.0,age_gy:1.5,life_gy:3,app_mag:2.48,abs_mag:0.76,color:"#FFB870",group:"Gigante",ra_h:20.77,dec_d:33.97,
+   comp:[{el:"Hidrógeno",p:70,c:"#4e9af1"},{el:"Helio",p:28.2,c:"#88ddcc"},{el:"Metales",p:1.8,c:"#f1d14e"}],planet:null,
+   note:"Estrella del ala derecha del Cisne. Es una gigante en etapa madura.",type_color:"#FFB060"},
+
+  {name:"Fawaris",type:"Gigante azul-blanca",spectral:"B9.5III",constellation:"Cisne",dist_ly:165,temp_k:10050,lum:155,radius:4.7,mass:3.1,age_gy:0.25,life_gy:0.5,app_mag:2.87,abs_mag:-0.74,color:"#B8D5FF",group:"Gigante",ra_h:19.61,dec_d:45.13,
+   comp:[{el:"Hidrógeno",p:71.2,c:"#4e9af1"},{el:"Helio",p:27.4,c:"#88ddcc"},{el:"Metales",p:1.4,c:"#f1d14e"}],planet:null,
+   note:"Marca el ala izquierda de la figura del Cisne. Es una binaria espectroscópica.",type_color:"#90C8FF"}
+];
+
+// Catálogo de objetos de cielo profundo (DSOs: Nebulosas y Cúmulos estelares) con coordenadas reales
+const DEEP_SKY_OBJECTS=[
+  {
+    name:"Nebulosa de Orión (M42)",
+    type:"Nebulosa difusa",
+    ra_h:5.58,
+    dec_d:-5.39,
+    dist_ly:1340,
+    mag:4.0,
+    color:"rgba(255, 100, 180, ", // Magenta/rosa
+    size_arcmin:60,
+    constellation:"Orión",
+    note:"La guardería estelar más cercana a la Tierra. Visible a simple vista como una mancha difusa en la espada de Orión. Contiene el cúmulo del Trapecio en su núcleo, donde nacen estrellas masivas."
+  },
+  {
+    name:"Las Pléyades (M45)",
+    type:"Cúmulo abierto",
+    ra_h:3.78,
+    dec_d:24.1,
+    dist_ly:444,
+    mag:1.6,
+    color:"rgba(100, 180, 255, ", // Azul cielo
+    size_arcmin:110,
+    constellation:"Tauro",
+    dots: [
+      [-0.5, 0.1],   // Alcyone
+      [-0.2, 0.25],  // Atlas
+      [0.1, 0.2],    // Electra
+      [0.35, 0.05],  // Maia
+      [-0.3, -0.2],  // Merope
+      [-0.05, -0.3], // Taygeta
+      [0.2, -0.25],  // Celaeno
+      [0.4, -0.15]   // Sterope
+    ],
+    note:"Un espectacular cúmulo estelar abierto visible a simple vista, envuelto en una fina nebulosa de reflexión azul brillante. Es uno de los cúmulos más cercanos y antiguos de la mitología."
+  },
+  {
+    name:"Las Híades",
+    type:"Cúmulo abierto",
+    ra_h:4.45,
+    dec_d:15.9,
+    dist_ly:153,
+    mag:0.5,
+    color:"rgba(255, 200, 120, ", // Dorado/naranja
+    size_arcmin:150,
+    constellation:"Tauro",
+    dots: [
+      [-0.3, -0.4],
+      [-0.1, -0.2],
+      [0.1, 0.0],
+      [-0.2, 0.2],
+      [0.0, 0.4],
+      [0.35, -0.15],
+      [0.2, 0.1]
+    ],
+    note:"El cúmulo estelar abierto más cercano al Sistema Solar, que forma la forma de 'V' en la cabeza de la constelación de Tauro. Rodea visualmente a Aldebarán, aunque esta no forma parte física del cúmulo."
+  },
+  {
+    name:"Nebulosa del Anillo (M57)",
+    type:"Nebulosa planetaria",
+    ra_h:18.89,
+    dec_d:33.03,
+    dist_ly:2300,
+    mag:8.8,
+    color:"rgba(100, 255, 200, ", // Turquesa
+    size_arcmin:25, // ampliado artificialmente en canvas para visibilidad
+    constellation:"Lira",
+    note:"Restos de una estrella moribunda similar al Sol que expulsó sus capas externas al agotarse su combustible. El residuo central es una enana blanca visible con grandes telescopios."
+  },
+  {
+    name:"Nebulosa de la Laguna (M8)",
+    type:"Nebulosa difusa",
+    ra_h:18.06,
+    dec_d:-24.38,
+    dist_ly:4100,
+    mag:6.0,
+    color:"rgba(220, 80, 220, ", // Púrpura
+    size_arcmin:90,
+    constellation:"Sagitario",
+    note:"Una inmensa nube interestelar gigante en la constelación de Sagitario. Contiene un cúmulo estelar abierto naciendo en su interior y es clasificada como una de las nebulosas más brillantes en latitudes australes."
+  },
+  {
+    name:"Omega Centauri (NGC 5139)",
+    type:"Cúmulo globular",
+    ra_h:13.45,
+    dec_d:-47.48,
+    dist_ly:15800,
+    mag:3.9,
+    color:"rgba(255, 255, 255, ",
+    size_arcmin:55,
+    constellation:"Centauro",
+    note:"El cúmulo globular más grande y brillante de la Vía Láctea, compuesto por unos 10 millones de estrellas antiguas. Se sospecha que son los restos del núcleo de una galaxia enana capturada por la nuestra."
+  }
+];
+
+// Conexiones de constelaciones con estrellas reales y líneas de unión
+const CONSTELLATIONS=[
+  {
+    name:"Orión",
+    lines:[
+      ["Betelgeuse", "Bellatrix"],
+      ["Bellatrix", "Mintaka"],
+      ["Mintaka", "Alnilam"],
+      ["Alnilam", "Alnitak"],
+      ["Alnitak", "Saiph"],
+      ["Saiph", "Rigel"],
+      ["Rigel", "Mintaka"],
+      ["Betelgeuse", "Alnitak"],
+      ["Betelgeuse", "Alnilam"]
+    ]
+  },
+  {
+    name:"Osa Mayor",
+    lines:[
+      ["Dubhe", "Merak"],
+      ["Merak", "Phecda"],
+      ["Phecda", "Megrez"],
+      ["Megrez", "Dubhe"],
+      ["Megrez", "Alioth"],
+      ["Alioth", "Mizar"],
+      ["Mizar", "Alkaid"]
+    ]
+  },
+  {
+    name:"Casiopea",
+    lines:[
+      ["Caph", "Schedar"],
+      ["Schedar", "Cih"],
+      ["Cih", "Ruchbah"],
+      ["Ruchbah", "Segin"]
+    ]
+  },
+  {
+    name:"Cruz del Sur",
+    lines:[
+      ["Acrux", "Mimosa"],
+      ["Mimosa", "Gacrux"],
+      ["Gacrux", "Imai"],
+      ["Imai", "Acrux"],
+      ["Acrux", "Gacrux"]
+    ]
+  },
+  {
+    name:"Géminis",
+    lines:[
+      ["Castor", "Pollux"]
+    ]
+  },
+  {
+    name:"Tauro",
+    lines:[
+      ["Aldebaran", "Elnath"],
+      ["Aldebaran", "Alheka"]
+    ]
+  },
+  {
+    name:"Can Mayor",
+    lines:[
+      ["Sírius", "Murzim"],
+      ["Sírius", "Adhara"],
+      ["Adhara", "Wezen"],
+      ["Wezen", "Murzim"]
+    ]
+  },
+  {
+    name:"Lira",
+    lines:[
+      ["Vega", "Sheliak"],
+      ["Vega", "Sulafat"],
+      ["Sheliak", "Sulafat"]
+    ]
+  },
+  {
+    name:"Cisne",
+    lines:[
+      ["Deneb", "Sadr"],
+      ["Sadr", "Albireo"],
+      ["Sadr", "Gienah"],
+      ["Sadr", "Fawaris"]
+    ]
+  },
+  {
+    name:"Triángulo de Verano",
+    asterism: true,
+    lines:[
+      ["Vega", "Deneb"],
+      ["Deneb", "Altair"],
+      ["Altair", "Vega"]
+    ]
+  },
+  {
+    name:"Triángulo de Invierno",
+    asterism: true,
+    lines:[
+      ["Sírius", "Procyon"],
+      ["Procyon", "Betelgeuse"],
+      ["Betelgeuse", "Sírius"]
+    ]
+  }
+];
+
+// Configuración matemática de la Vía Láctea en 3D
+const ra_g = 192.859 * Math.PI / 180;
+const dec_g = 27.128 * Math.PI / 180;
+const ng = [
+  Math.cos(dec_g) * Math.cos(ra_g),
+  Math.cos(dec_g) * Math.sin(ra_g),
+  Math.sin(dec_g)
+];
+const ug = [-Math.sin(ra_g), Math.cos(ra_g), 0];
+const vg = [
+  -ng[2] * ug[1],
+  ng[2] * ug[0],
+  ng[0] * ug[1] - ng[1] * ug[0]
+];
+
+const gcAlpha = 17.76 * Math.PI / 12;
+const gcDelta = -29.0 * Math.PI / 180;
+const gcX = Math.cos(gcDelta) * Math.cos(gcAlpha);
+const gcY = Math.cos(gcDelta) * Math.sin(gcAlpha);
+const gcZ = Math.sin(gcDelta);
+
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let W,H,dpr;
+
+// Configuración inicial y estados celestes
+let rotX=0.28, rotY=0.2, zoom=1;
+let drag=false, lastX=0, lastY=0, dragMoved=false;
+let hoveredStar=null, selectedStar=null;
+let hoveredDso=null, selectedDso=null;
+let filter="Todas";
+let glowPhase=0;
+
+// Opciones del panel de control
+const opts = {
+  viewMode: 'globe', // 'globe' o 'sky'
+  constLines: true,
+  constLabels: true,
+  milkyWay: true,
+  dsos: true,
+  gridEq: false,
+  gridEc: false,
+  autoRot: true,
+  twinkle: true
+};
+
+// Generar coordenadas 3D para todas las estrellas del catálogo
+STARS.forEach(s=>{
+  const alpha = s.ra_h * Math.PI / 12; // 15 grados por hora
+  const delta = s.dec_d * Math.PI / 180;
+  s.x = Math.cos(delta) * Math.cos(alpha);
+  s.y = Math.cos(delta) * Math.sin(alpha);
+  s.z = Math.sin(delta);
+});
+
+// Generar coordenadas 3D para los DSOs
+DEEP_SKY_OBJECTS.forEach(dso=>{
+  const alpha = dso.ra_h * Math.PI / 12;
+  const delta = dso.dec_d * Math.PI / 180;
+  dso.x = Math.cos(delta) * Math.cos(alpha);
+  dso.y = Math.cos(delta) * Math.sin(alpha);
+  dso.z = Math.sin(delta);
+});
+
+// Generación de estrellas de fondo del firmamento (BG_STARS)
+const BG_STARS=[];
+for(let i=0;i<500;i++){
+  const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+  BG_STARS.push({
+    x:Math.sin(ph)*Math.cos(th), y:Math.cos(ph), z:Math.sin(ph)*Math.sin(th),
+    r:Math.random()*0.8+0.1, a:Math.random()*0.6+0.1,
+    twinkle:Math.random()*Math.PI*2, speed:Math.random()*1.5+0.4,
+    col:Math.random()<0.15?'#FFE8B0':Math.random()<0.1?'#B0C8FF':'#fff'
+  });
+}
+for(let i=0;i<800;i++){
+  const theta = Math.random() * Math.PI * 2;
+  const b = (Math.random() - Math.random()) * 0.18;
+  const cosB = Math.cos(b);
+  const sinB = Math.sin(b);
+  
+  const x = cosB * Math.cos(theta) * ug[0] + cosB * Math.sin(theta) * vg[0] + sinB * ng[0];
+  const y = cosB * Math.cos(theta) * ug[1] + cosB * Math.sin(theta) * vg[1] + sinB * ng[1];
+  const z = cosB * Math.cos(theta) * ug[2] + cosB * Math.sin(theta) * vg[2] + sinB * ng[2];
+  
+  BG_STARS.push({
+    x, y, z,
+    r:Math.random()*0.6+0.05, a:Math.random()*0.5+0.15,
+    twinkle:Math.random()*Math.PI*2, speed:Math.random()*1.5+0.4,
+    col:Math.random()<0.25?'#FFE8B0':Math.random()<0.15?'#B0C8FF':'#fff'
+  });
+}
+
+// Generación de partículas de polvo galáctico para la Vía Láctea
+const MW_GLOW = [];
+for (let i = 0; i < 600; i++) {
+  const theta = Math.random() * Math.PI * 2;
+  const b = (Math.random() - Math.random()) * 0.28;
+  const cosB = Math.cos(b);
+  const sinB = Math.sin(b);
+  
+  const x = cosB * Math.cos(theta) * ug[0] + cosB * Math.sin(theta) * vg[0] + sinB * ng[0];
+  const y = cosB * Math.cos(theta) * ug[1] + cosB * Math.sin(theta) * vg[1] + sinB * ng[1];
+  const z = cosB * Math.cos(theta) * ug[2] + cosB * Math.sin(theta) * vg[2] + sinB * ng[2];
+  
+  const dotGC = x * gcX + y * gcY + z * gcZ;
+  const gcFactor = (dotGC + 1) / 2;
+  
+  const size = (Math.random() * 30 + 15) * (1 + gcFactor * 0.5);
+  const colors = [
+    'rgba(40, 25, 90, ',
+    'rgba(20, 45, 100, ',
+    'rgba(75, 30, 65, ',
+    'rgba(15, 15, 45, ',
+    'rgba(120, 80, 150, '
+  ];
+  let cBase = colors[Math.floor(Math.random() * colors.length)];
+  if (dotGC > 0.55 && Math.random() < 0.4) {
+    cBase = 'rgba(125, 80, 45, ';
+  }
+  
+  const alpha = (Math.random() * 0.015 + 0.005) * (1 + gcFactor * 2.2);
+  
+  MW_GLOW.push({ x, y, z, size, colorBase: cBase, alpha });
+}
+
+// Pre-generación de los vectores para las grillas celestes
+const GRID_DECS = [-60, -30, 0, 30, 60];
+const GRID_RAS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
+
+const GEOM_GRIDS = {
+  parallels: [],
+  meridians: [],
+  ecliptic: [],
+  galacticEquator: []
+};
+
+GRID_DECS.forEach(dec => {
+  const path = [];
+  const decRad = dec * Math.PI / 180;
+  const cosDec = Math.cos(decRad);
+  const sinDec = Math.sin(decRad);
+  for (let i = 0; i <= 72; i++) {
+    const theta = (i * 5) * Math.PI / 180;
+    path.push([cosDec * Math.cos(theta), cosDec * Math.sin(theta), sinDec]);
+  }
+  GEOM_GRIDS.parallels.push(path);
+});
+
+GRID_RAS.forEach(ra => {
+  const path = [];
+  const raRad = ra * Math.PI / 12;
+  for (let i = -18; i <= 18; i++) {
+    const dec = i * 5;
+    const decRad = dec * Math.PI / 180;
+    path.push([Math.cos(decRad) * Math.cos(raRad), Math.cos(decRad) * Math.sin(raRad), Math.sin(decRad)]);
+  }
+  GEOM_GRIDS.meridians.push(path);
+});
+
+for (let i = 0; i <= 72; i++) {
+  const theta = (i * 5) * Math.PI / 180;
+  const tilt = 23.439 * Math.PI / 180;
+  GEOM_GRIDS.ecliptic.push([Math.cos(theta), Math.sin(theta) * Math.cos(tilt), Math.sin(theta) * Math.sin(tilt)]);
+}
+
+for (let i = 0; i <= 72; i++) {
+  const theta = (i * 5) * Math.PI / 180;
+  GEOM_GRIDS.galacticEquator.push([
+    Math.cos(theta) * ug[0] + Math.sin(theta) * vg[0],
+    Math.cos(theta) * ug[1] + Math.sin(theta) * vg[1],
+    Math.cos(theta) * ug[2] + Math.sin(theta) * vg[2]
+  ]);
+}
+
+function resize(){
+  dpr=window.devicePixelRatio||1;
+  W=window.innerWidth; H=window.innerHeight;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+}
+
+function rot3([x,y,z],rx,ry){
+  const y2=y*Math.cos(rx)-z*Math.sin(rx), z2=y*Math.sin(rx)+z*Math.cos(rx);
+  const x2=x*Math.cos(ry)+z2*Math.sin(ry), z3=-x*Math.sin(ry)+z2*Math.cos(ry);
+  return[x2,y2,z3];
+}
+
+function project([x,y,z]){
+  if (opts.viewMode === 'sky') {
+    const fov = Math.min(W, H) * 0.52 * zoom;
+    const zd = z;
+    if (zd <= 0.02) return [0, 0, -1];
+    return [W/2 + x * fov / zd, H/2 - y * fov / zd, zd];
+  } else {
+    const fov = Math.min(W, H) * 0.82 * zoom;
+    const zd = z + 2.8;
+    return [W/2 + x * fov / zd, H/2 - y * fov / zd, zd];
+  }
+}
+
+function lumToRadius(lum, z){
+  const base = lum > 100000 ? 12 : lum > 10000 ? 10 : lum > 500 ? 8 : lum > 10 ? 6 : 4.5;
+  const scale = Math.min(W, H) / 720;
+  const viewFactor = opts.viewMode === 'sky' ? (1 / z) * 0.8 : (4 / (z * 1.6));
+  return Math.max(1.5, base * scale * viewFactor);
+}
+
+function hexToRgb(hex){
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+
+function drawStar(cx,cy,r,star,phase,selected,hovered){
+  const [ri,gi,bi] = hexToRgb(star.innerColor||star.color);
+  const [ro,go,bo] = hexToRgb(star.color);
+  const pulse = opts.twinkle ? (0.8 + 0.2 * Math.sin(phase)) : 1.0;
+  const intensity = selected ? 1.4 : hovered ? 1.2 : 1.0;
+  const gm = intensity * pulse;
+
+  [{scale:8,alpha:0.025},{scale:5,alpha:0.065},{scale:2.8,alpha:0.12},{scale:1.6,alpha:0.22}].forEach(({scale,alpha})=>{
+    const gr=ctx.createRadialGradient(cx,cy,0,cx,cy,r*scale);
+    gr.addColorStop(0,`rgba(${ro},${go},${bo},${alpha*gm})`);
+    gr.addColorStop(1,`rgba(${ro},${go},${bo},0)`);
+    ctx.beginPath();ctx.arc(cx,cy,r*scale,0,Math.PI*2);
+    ctx.fillStyle=gr;ctx.fill();
+  });
+
+  const cg=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+  cg.addColorStop(0,`rgb(${ri},${gi},${bi})`);
+  cg.addColorStop(0.5,`rgb(${Math.round((ri+ro)/2)},${Math.round((gi+go)/2)},${Math.round((bi+bo)/2)})`);
+  cg.addColorStop(1,`rgb(${ro},${go},${bo})`);
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle=cg;ctx.fill();
+
+  if(r > 3.8){
+    const spk = r * (selected ? 3.4 : hovered ? 2.8 : 2.2) * gm;
+    ctx.save();
+    ctx.globalAlpha = 0.28 * gm;
+    ctx.strokeStyle = `rgb(${ri},${gi},${bi})`;
+    ctx.lineWidth = r * 0.12;
+    [[0,1],[1,0],[0.7,0.7],[-0.7,0.7]].forEach(([dx,dy])=>{
+      ctx.beginPath();
+      ctx.moveTo(cx - dx * spk * 0.1, cy - dy * spk * 0.1);
+      ctx.lineTo(cx + dx * spk, cy + dy * spk);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + dx * spk * 0.1, cy + dy * spk * 0.1);
+      ctx.lineTo(cx - dx * spk, cy - dy * spk);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+}
+
+function getVisible(){
+  return STARS.map((s,i)=>{
+    const rv=rot3([s.x,s.y,s.z],rotX,rotY);
+    const p=project(rv);
+    return{s,i,rv,p};
+  }).filter(d=>{
+    if (filter !== "Todas" && d.s.group !== filter) return false;
+    if (opts.viewMode === 'sky' && d.p[2] <= 0) return false;
+    return true;
+  }).sort((a,b)=>a.rv[2] - b.rv[2]);
+}
+
+function drawGridLine(points, color, dashed = false) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 0.6;
+  if (dashed) ctx.setLineDash([3, 5]);
+  ctx.beginPath();
+  let first = true;
+  for (let i = 0; i < points.length; i++) {
+    const rv = rot3(points[i], rotX, rotY);
+    if (opts.viewMode === 'sky' && rv[2] <= 0.05) {
+      first = true;
+      continue;
+    }
+    const p = project(rv);
+    if (first) {
+      ctx.moveTo(p[0], p[1]);
+      first = false;
+    } else {
+      ctx.lineTo(p[0], p[1]);
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawFrame(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#010107';
+  ctx.fillRect(0,0,W,H);
+
+  // 1. DIBUJAR LA VÍA LÁCTEA EN 3D
+  if (opts.milkyWay) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    MW_GLOW.forEach(p => {
+      const rv = rot3([p.x, p.y, p.z], rotX, rotY);
+      if (opts.viewMode === 'sky' && rv[2] <= 0.05) return;
+      const pt = project(rv);
+      const sizeScale = opts.viewMode === 'sky' ? (1 / rv[2]) * 0.8 : (4 / (rv[2] + 2.8));
+      const r = Math.max(2, p.size * sizeScale * zoom);
+      const gr = ctx.createRadialGradient(pt[0], pt[1], 0, pt[0], pt[1], r);
+      gr.addColorStop(0, p.colorBase + p.alpha + ')');
+      gr.addColorStop(1, p.colorBase + '0)');
+      ctx.beginPath();ctx.arc(pt[0], pt[1], r, 0, Math.PI*2);ctx.fillStyle = gr;ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  // 2. DIBUJAR ESTRELLAS DE FONDO
+  BG_STARS.forEach(s=>{
+    const rv=rot3([s.x,s.y,s.z],rotX,rotY);
+    if (opts.viewMode === 'sky' && rv[2] <= 0.05) return;
+    const p=project(rv);
+    const twink = opts.twinkle ? (s.a * (0.5 + 0.5 * Math.sin(glowPhase * s.speed + s.twinkle))) : s.a;
+    ctx.beginPath();ctx.arc(p[0], p[1], s.r * (opts.viewMode === 'sky' ? 1.3 : 1.0) * zoom, 0, Math.PI*2);
+    const rgbStr = s.col === '#FFE8B0' ? '255,232,176' : s.col === '#B0C8FF' ? '176,200,255' : '255,255,255';
+    ctx.fillStyle = `rgba(${rgbStr},${twink})`;
+    ctx.fill();
+  });
+
+  // 3. DIBUJAR LAS GRILLAS DE COORDENADAS
+  if (opts.gridEq) {
+    GEOM_GRIDS.parallels.forEach(path => { drawGridLine(path, 'rgba(100, 150, 255, 0.05)', true); });
+    GEOM_GRIDS.meridians.forEach(path => { drawGridLine(path, 'rgba(100, 150, 255, 0.05)', true); });
+  }
+  if (opts.gridEc) {
+    drawGridLine(GEOM_GRIDS.ecliptic, 'rgba(255, 215, 100, 0.25)', true);
+    drawGridLine(GEOM_GRIDS.galacticEquator, 'rgba(180, 140, 255, 0.2)', false);
+  }
+
+  // 4. DIBUJAR OBJETOS DE CIELO PROFUNDO (DSOs: Nebulosas y Cúmulos)
+  if (opts.dsos) {
+    DEEP_SKY_OBJECTS.forEach((dso, i) => {
+      const rv = rot3([dso.x, dso.y, dso.z], rotX, rotY);
+      if (opts.viewMode === 'sky' && rv[2] <= 0.05) return;
+      const p = project(rv);
+      const scale = opts.viewMode === 'sky' ? (1/rv[2])*0.8 : (4/(rv[2] + 2.8));
+      const r = Math.max(10, dso.size_arcmin * 0.22 * scale * zoom);
+      const isH = hoveredDso === i;
+      const isS = selectedDso === i;
+
+      if (dso.type.includes("Cúmulo abierto")) {
+        // Cúmulo abierto: brillo gaseoso amplio + estrellas puntuales
+        ctx.save();
+        const gr = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
+        gr.addColorStop(0, dso.color + '0.22)');
+        gr.addColorStop(1, dso.color + '0)');
+        ctx.fillStyle = gr;
+        ctx.beginPath();ctx.arc(p[0], p[1], r, 0, Math.PI*2);ctx.fill();
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        if (dso.dots) {
+          dso.dots.forEach(([dx, dy]) => {
+            ctx.beginPath();
+            ctx.arc(p[0] + dx * r * 0.5, p[1] + dy * r * 0.5, 0.9, 0, Math.PI*2);
+            ctx.fill();
+          });
+        }
+        ctx.restore();
+      } else if (dso.type.includes("Nebulosa planetaria")) {
+        // Nebulosa planetaria: Anillo gaseoso bicolor con envolturas
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 90, 90, 0.6)';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();ctx.arc(p[0], p[1], r * 0.85, 0, Math.PI*2);ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(80, 255, 200, 0.75)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();ctx.arc(p[0], p[1], r * 0.62, 0, Math.PI*2);ctx.stroke();
+
+        const gr = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 0.55);
+        gr.addColorStop(0, 'rgba(80, 255, 200, 0.2)');
+        gr.addColorStop(1, 'rgba(80, 255, 200, 0)');
+        ctx.fillStyle = gr;
+        ctx.beginPath();ctx.arc(p[0], p[1], r * 0.55, 0, Math.PI*2);ctx.fill();
+        ctx.restore();
+      } else if (dso.type.includes("Cúmulo globular")) {
+        // Cúmulo globular: Núcleo ultradenso y estrellas secundarias dispersas
+        ctx.save();
+        const gr = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
+        gr.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+        gr.addColorStop(0.4, 'rgba(255, 255, 255, 0.12)');
+        gr.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = gr;
+        ctx.beginPath();ctx.arc(p[0], p[1], r, 0, Math.PI*2);ctx.fill();
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        for(let k=0; k<25; k++) {
+          const pseudoSeed = (i * 43 + k * 17) % 100 / 100;
+          const pseudoSeed2 = (i * 31 + k * 19) % 100 / 100;
+          const rad = Math.sqrt(pseudoSeed) * r * 0.75;
+          const ang = pseudoSeed2 * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(p[0] + rad * Math.cos(ang), p[1] + rad * Math.sin(ang), 0.75, 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+      } else {
+        // Nebulosa difusa: Formas orgánicas gaseosas mezcladas
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const patches = [[-0.2, 0.1], [0.2, -0.1], [0.0, 0.25], [-0.15, -0.2]];
+        patches.forEach(([dx, dy], pi) => {
+          const patchScale = 0.8 + 0.35 * Math.sin(pi + i);
+          const gr = ctx.createRadialGradient(
+            p[0] + dx * r * 0.4, p[1] + dy * r * 0.4, 0,
+            p[0] + dx * r * 0.4, p[1] + dy * r * 0.4, r * patchScale
+          );
+          gr.addColorStop(0, dso.color + '0.18)');
+          gr.addColorStop(0.4, dso.color + '0.08)');
+          gr.addColorStop(1, dso.color + '0)');
+          ctx.fillStyle = gr;
+          ctx.beginPath();ctx.arc(p[0] + dx * r * 0.4, p[1] + dy * r * 0.4, r * patchScale, 0, Math.PI*2);ctx.fill();
+        });
+        ctx.restore();
+      }
+
+      // Etiqueta distintiva de DSO
+      const dsoSelectedOrHovered = isH || isS;
+      ctx.save();
+      ctx.font = `italic ${dsoSelectedOrHovered ? 600 : 400} ${(9 * (Math.min(W, H)/720))}px 'Outfit', sans-serif`;
+      ctx.fillStyle = `rgba(220, 200, 255, ${dsoSelectedOrHovered ? 0.95 : 0.45})`;
+      ctx.textAlign = 'center';
+      ctx.fillText(dso.name, p[0], p[1] - r - 6);
+      ctx.restore();
+
+      // Indicador circular de selección para DSOs
+      if (isS) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(200, 150, 255, 0.65)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();ctx.arc(p[0], p[1], r + 4, 0, Math.PI*2);ctx.stroke();
+        ctx.restore();
+      }
+    });
+  }
+
+  // 5. DIBUJAR LÍNEAS DE CONSTELACIONES
+  if (opts.constLines) {
+    ctx.save();
+    ctx.lineWidth = 0.8;
+    
+    CONSTELLATIONS.forEach(con => {
+      if (con.asterism) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.055)';
+        ctx.setLineDash([2, 4]);
+      } else {
+        ctx.strokeStyle = 'rgba(135, 206, 250, 0.12)';
+        ctx.setLineDash([]);
+      }
+      
+      con.lines.forEach(([s1, s2]) => {
+        const star1 = STARS.find(s => s.name === s1);
+        const star2 = STARS.find(s => s.name === s2);
+        
+        if (star1 && star2) {
+          const rv1 = rot3([star1.x, star1.y, star1.z], rotX, rotY);
+          const rv2 = rot3([star2.x, star2.y, star2.z], rotX, rotY);
+          if (opts.viewMode === 'sky' && (rv1[2] <= 0.05 || rv2[2] <= 0.05)) return;
+          const p1 = project(rv1);
+          const p2 = project(rv2);
+          
+          ctx.beginPath();
+          ctx.moveTo(p1[0], p1[1]);
+          ctx.lineTo(p2[0], p2[1]);
+          ctx.stroke();
+        }
+      });
+    });
+    ctx.restore();
+  }
+
+  // 6. DIBUJAR NOMBRES DE CONSTELACIONES
+  if (opts.constLabels) {
+    ctx.save();
+    ctx.font = `italic 500 ${(9 * (Math.min(W, H) / 720))}px 'Outfit', sans-serif`;
+    ctx.fillStyle = 'rgba(135, 206, 250, 0.42)';
+    ctx.textAlign = 'center';
+    ctx.letterSpacing = '0.08em';
+
+    CONSTELLATIONS.forEach(con => {
+      let sumX = 0, sumY = 0, count = 0;
+      let allVisible = true;
+      
+      con.lines.forEach(([s1, s2]) => {
+        [s1, s2].forEach(sname => {
+          const star = STARS.find(s => s.name === sname);
+          if (star) {
+            const rv = rot3([star.x, star.y, star.z], rotX, rotY);
+            if (opts.viewMode === 'sky' && rv[2] <= 0.05) {
+              allVisible = false;
+              return;
+            }
+            const p = project(rv);
+            sumX += p[0];
+            sumY += p[1];
+            count++;
+          }
+        });
+      });
+      
+      if (count > 0 && allVisible) {
+        ctx.fillText(con.name.toUpperCase(), sumX / count, sumY / count);
+      }
+    });
+    ctx.restore();
+  }
+
+  // 7. DIBUJAR ESTRELLAS PRINCIPALES DEL CATÁLOGO
+  const visible = getVisible();
+  visible.forEach(({s, i, rv, p})=>{
+    const r=lumToRadius(s.lum, p[2]);
+    const phase=glowPhase*0.9+i*0.8;
+    const isH=hoveredStar===i, isS=selectedStar===i;
+
+    if(s.planet){
+      const orR = r + (opts.viewMode === 'sky' ? 12 / rv[2] : 9);
+      const orRy = orR * 0.38;
+      
+      ctx.beginPath();ctx.ellipse(p[0], p[1], orR, orRy, 0, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 0.55;
+      if(!s.planet.confirmed) ctx.setLineDash([2, 4]);
+      ctx.stroke();ctx.setLineDash([]);
+      
+      const ang = glowPhase * (s.planet.confirmed ? 0.4 : 0.25) + i * 1.5;
+      const px = p[0] + orR * Math.cos(ang);
+      const py = p[1] + orRy * Math.sin(ang);
+      const pr = Math.max(1.5, r * 0.22);
+      const [rp,gp,bp] = hexToRgb(s.planet.color || '#88ddcc');
+      
+      const pg=ctx.createRadialGradient(px,py,0,px,py,pr*2.8);
+      pg.addColorStop(0,`rgba(${rp},${gp},${bp},0.5)`);
+      pg.addColorStop(1,`rgba(${rp},${gp},${bp},0)`);
+      ctx.beginPath();ctx.arc(px,py,pr*2.8,0,Math.PI*2);ctx.fillStyle=pg;ctx.fill();
+      
+      ctx.beginPath();ctx.arc(px,py,pr,0,Math.PI*2);ctx.fillStyle=`rgb(${rp},${gp},${bp})`;ctx.fill();
+    }
+
+    drawStar(p[0], p[1], r, s, phase, isS, isH);
+
+    const labelA = isH || isS ? 0.95 : 0.6;
+    const labelSize = (isH || isS ? 12 : 10) * (Math.min(W, H) / 720);
+    ctx.font = `${isH || isS ? 600 : 400} ${labelSize}px 'Outfit', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = `rgba(255, 255, 255, ${labelA})`;
+    ctx.fillText(s.name, p[0], p[1] + r + (s.planet ? 18 : 14));
+
+    if(s.constellation && s.constellation !== '—'){
+      const cA = isH || isS ? 0.45 : 0.25;
+      ctx.font = `300 ${(isH || isS ? 10 : 9) * (Math.min(W, H) / 720)}px 'Outfit', sans-serif`;
+      ctx.fillStyle = `rgba(180, 210, 255, ${cA})`;
+      ctx.fillText(s.constellation, p[0], p[1] + r + (s.planet ? 29 : 24));
+    }
+  });
+}
+
+// ── Hint tooltip en hover ──
+function updateHint(hit, px, py){
+  const h=document.getElementById('hint');
+  if(!hit){h.classList.remove('vis');return;}
+  
+  if (hit.type === 'star') {
+    const s = STARS[hit.index];
+    document.getElementById('hint-name').textContent=s.name;
+    document.getElementById('hint-type').textContent=s.type+(s.constellation&&s.constellation!=='—'?' · '+s.constellation:'');
+  } else {
+    const d = DEEP_SKY_OBJECTS[hit.index];
+    document.getElementById('hint-name').textContent=d.name;
+    document.getElementById('hint-type').textContent=d.type+(d.constellation?' · '+d.constellation:'');
+  }
+  
+  const margin=10;
+  let lx=px+18, ly=py-10;
+  if(lx+210 > W) lx=px-225;
+  if(ly < margin) ly=margin;
+  h.style.left=lx+'px';
+  h.style.top=ly+'px';
+  h.classList.add('vis');
+}
+
+// ── Ficha técnica en el panel lateral ──
+function buildPanel(item, type){
+  if(!item){
+    document.getElementById('panel-content').innerHTML='<p style="color:rgba(255,255,255,0.3);font-size:12px;margin-top:40px;text-align:center;">Selecciona una estrella o nebulosa para ver su ficha técnica.</p>';
+    return;
+  }
+  
+  if (type === 'star') {
+    const lifePct = Math.min(100,(item.age_gy / item.life_gy * 100)).toFixed(0);
+    const fmtD = item.dist_ly < 0.01 ? '~8 lm (8.3 minutos)' : item.dist_ly.toLocaleString('es-CO',{maximumFractionDigits:1}) + ' al';
+
+    let planetHTML='';
+    if(item.planet){
+      planetHTML=`<div class="section-title">Exoplaneta Destacado</div>
+  <div class="planet-block">
+    <div class="planet-name-row">${item.planet.name}${item.planet.confirmed?'':' <span style="font-size:9px;font-weight:400;color:rgba(255,255,255,0.35)">(no confirmado)</span>'}</div>
+    <span class="planet-badge">${item.planet.type} · ${item.planet.zone}</span>
+    <div class="p-grid">
+      ${item.planet.esi>0?`<div class="p-metric"><div class="p-metric-label">Índice ESI</div><div class="p-metric-val" style="color:#7ecfb3">${item.planet.esi.toFixed(2)}</div></div>`:''}
+      ${item.planet.mass_e?`<div class="p-metric"><div class="p-metric-label">Masa</div><div class="p-metric-val">${item.planet.mass_e} M⊕</div></div>`:''}
+      ${item.planet.radius_e?`<div class="p-metric"><div class="p-metric-label">Radio</div><div class="p-metric-val">${item.planet.radius_e} R⊕</div></div>`:''}
+      ${item.planet.period_d?`<div class="p-metric"><div class="p-metric-label">Órbita</div><div class="p-metric-val">${item.planet.period_d.toLocaleString('es-CO')} d</div></div>`:''}
+    </div>
+    <div class="p-note">${item.planet.note}</div>
+  </div>`;
+    } else if(item.planet_note){
+      planetHTML=`<div class="section-title">Habitabilidad Exoplanetaria</div>
+  <div class="planet-block" style="border-color:rgba(255,255,255,0.06);background:rgba(255,255,255,0.015);">
+    <div class="planet-no">${item.planet_note}</div>
+  </div>`;
+    }
+
+    document.getElementById('panel-content').innerHTML=`
+  <div class="p-star-header">
+    <div class="p-dot" style="background:${item.color};box-shadow:0 0 14px 4px ${item.color}66;"></div>
+    <div>
+      <div class="p-name">${item.name}</div>
+      <div class="p-spectral">${item.spectral}${item.constellation&&item.constellation!=='—'?' · '+item.constellation:''}</div>
+    </div>
+    <span class="p-type-badge" style="background:${item.type_color||item.color}15;color:${item.type_color||item.color};border:1px solid ${item.type_color||item.color}33;">${item.type}</span>
+  </div>
+
+  <div class="section-title">Datos Físicos Comparativos</div>
+  <div class="p-grid">
+    <div class="p-metric"><div class="p-metric-label">Temperatura</div><div class="p-metric-val">${item.temp_k.toLocaleString('es-CO')} K</div></div>
+    <div class="p-metric"><div class="p-metric-label">Distancia</div><div class="p-metric-val">${fmtD}</div></div>
+    <div class="p-metric"><div class="p-metric-label">Luminosidad</div><div class="p-metric-val">${item.lum>=1000?(item.lum/1000).toLocaleString('es-CO',{maximumFractionDigits:1})+'k':item.lum} L☉</div></div>
+    <div class="p-metric"><div class="p-metric-label">Radio</div><div class="p-metric-val">${item.radius} R☉</div></div>
+    <div class="p-metric"><div class="p-metric-label">Masa</div><div class="p-metric-val">${item.mass} M☉</div></div>
+    <div class="p-metric"><div class="p-metric-label">Ascensión Recta</div><div class="p-metric-val" style="font-size:12px;">${item.ra_h.toFixed(2)}h</div></div>
+    <div class="p-metric"><div class="p-metric-label">Declinación</div><div class="p-metric-val" style="font-size:12px;">${item.dec_d >= 0 ? '+' : ''}${item.dec_d.toFixed(2)}°</div></div>
+    <div class="p-metric"><div class="p-metric-label">Mag. Aparente</div><div class="p-metric-val">${item.app_mag}</div></div>
+  </div>
+
+  <div class="section-title">Edad y Expectativa de Vida</div>
+  <div class="life-bar-wrap">
+    <div class="life-label">${item.age_gy} Ga de ~${item.life_gy} Ga (${lifePct}%)</div>
+    <div class="life-bar-track"><div class="life-bar-fill" style="width:${lifePct}%;background:${item.color};"></div></div>
+  </div>
+
+  <div class="section-title">Abundancia Elementaria</div>
+  ${item.comp.map(c=>`<div class="comp-line"><span class="comp-name">${c.el}</span><div class="comp-track"><div class="comp-fill" style="width:${c.p}%;background:${c.c}"></div></div><span class="comp-pct">${c.p}%</span></div>`).join('')}
+
+  ${planetHTML}
+
+  <div class="section-title">Anotación Científica</div>
+  <p class="p-note">${item.note}</p>
+  `;
+  } else {
+    const fmtD = item.dist_ly.toLocaleString('es-CO') + ' al';
+    const sizeFmt = item.size_arcmin >= 60 ? (item.size_arcmin/60).toFixed(1) + '°' : item.size_arcmin + "'";
+    const rgbStr = item.color.replace('rgba(', '').split(',').slice(0, 3).join(',');
+
+    document.getElementById('panel-content').innerHTML=`
+  <div class="p-star-header">
+    <div class="p-dot" style="background:rgb(${rgbStr});box-shadow:0 0 14px 4px rgba(${rgbStr},0.55);"></div>
+    <div>
+      <div class="p-name">${item.name}</div>
+      <div class="p-spectral">${item.type}${item.constellation?' · '+item.constellation:''}</div>
+    </div>
+    <span class="p-type-badge" style="background:rgba(${rgbStr},0.12);color:rgb(${rgbStr});border:1px solid rgba(${rgbStr},0.25);">DSO</span>
+  </div>
+
+  <div class="section-title">Datos de Cielo Profundo</div>
+  <div class="p-grid">
+    <div class="p-metric"><div class="p-metric-label">Tipo de Objeto</div><div class="p-metric-val" style="font-size:12px;color:var(--accent);">${item.type}</div></div>
+    <div class="p-metric"><div class="p-metric-label">Distancia</div><div class="p-metric-val">${fmtD}</div></div>
+    <div class="p-metric"><div class="p-metric-label">Dimensión Angular</div><div class="p-metric-val">${sizeFmt}</div></div>
+    <div class="p-metric"><div class="p-metric-label">Magnitud Integrada</div><div class="p-metric-val">${item.mag}</div></div>
+    <div class="p-metric"><div class="p-metric-label">Ascensión Recta</div><div class="p-metric-val" style="font-size:12px;">${item.ra_h.toFixed(2)}h</div></div>
+    <div class="p-metric"><div class="p-metric-label">Declinación</div><div class="p-metric-val" style="font-size:12px;">${item.dec_d >= 0 ? '+' : ''}${item.dec_d.toFixed(2)}°</div></div>
+  </div>
+
+  <div class="section-title">Descripción Científica</div>
+  <p class="p-note" style="font-size:12px;line-height:1.6;color:var(--text-secondary);">${item.note}</p>
+  `;
+  }
+}
+
+function openPanel(item, type){
+  buildPanel(item, type);
+  document.getElementById('panel').classList.add('open');
+}
+
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  selectedStar=null;
+  selectedDso=null;
+}
+
+document.getElementById('close-btn').addEventListener('click', closePanel);
+
+// Detección de colisión (clic en estrellas principales y DSOs)
+function getHit(mx, my){
+  let bestStar=null, bestStarD=26;
+  STARS.forEach((s,i)=>{
+    if(filter !== "Todas" && s.group !== filter) return;
+    const rv = rot3([s.x, s.y, s.z], rotX, rotY);
+    if (opts.viewMode === 'sky' && rv[2] <= 0.05) return;
+    const p = project(rv);
+    const r = lumToRadius(s.lum, p[2]);
+    const d = Math.sqrt((mx - p[0])**2 + (my - p[1])**2);
+    const hitArea = Math.max(r + 14, 20);
+    if(d < hitArea && d < bestStarD){
+      bestStarD = d;
+      bestStar = i;
+    }
+  });
+
+  if (bestStar !== null) return { type: 'star', index: bestStar };
+
+  if (opts.dsos) {
+    let bestDso=null, bestDsoD=26;
+    DEEP_SKY_OBJECTS.forEach((dso, i) => {
+      const rv = rot3([dso.x, dso.y, dso.z], rotX, rotY);
+      if (opts.viewMode === 'sky' && rv[2] <= 0.05) return;
+      const p = project(rv);
+      const scale = opts.viewMode === 'sky' ? (1/rv[2])*0.8 : (4/(rv[2] + 2.8));
+      const r = Math.max(10, dso.size_arcmin * 0.22 * scale * zoom);
+      const d = Math.sqrt((mx - p[0])**2 + (my - p[1])**2);
+      const hitArea = Math.max(r + 16, 24);
+      if (d < hitArea && d < bestDsoD) {
+        bestDsoD = d;
+        bestDso = i;
+      }
+    });
+    if (bestDso !== null) return { type: 'dso', index: bestDso };
+  }
+
+  return null;
+}
+
+//función para buscar estrellas por nombre
+function findStarByName(name){
+
+  return STARS.find(
+    s => s.name.toLowerCase() === name.toLowerCase()
+  );
+
+}
+
+function searchStar(){
+
+  const name =
+  document.getElementById("star-search")
+  .value
+  .trim();
+
+  const star = STARS.find(
+    s => s.name.toLowerCase()
+      .includes(name.toLowerCase())
+  );
+
+  if(!star){
+
+    alert("Estrella no encontrada");
+
+    return;
+  }
+
+  focusStar(star);
+
+}
+
+function focusStar(star){
+
+  selectedStar = STARS.indexOf(star);
+
+  rotY = -Math.atan2(star.y, star.x);
+
+  const xy =
+  Math.sqrt(star.x*star.x + star.y*star.y);
+
+  rotX = Math.atan2(star.z, xy);
+
+  openPanel(star,'star');
+
+}
+
+// Control de eventos interactivos
+canvas.addEventListener('mousemove',e=>{
+  const mx=e.clientX, my=e.clientY;
+  if(drag){
+    if (opts.viewMode === 'sky') {
+      rotY -= (mx - lastX) * 0.0035;
+      rotX -= (my - lastY) * 0.0035;
+      rotX = Math.max(-Math.PI/2 + 0.02, Math.min(Math.PI/2 - 0.02, rotX));
+    } else {
+      rotY += (mx - lastX) * 0.004;
+      rotX += (my - lastY) * 0.004;
+    }
+    lastX = mx;
+    lastY = my;
+    dragMoved = true;
+  }
+  const hit = getHit(mx, my);
+  if (hit) {
+    if (hit.type === 'star') {
+      hoveredStar = hit.index;
+      hoveredDso = null;
+    } else {
+      hoveredDso = hit.index;
+      hoveredStar = null;
+    }
+  } else {
+    hoveredStar = null;
+    hoveredDso = null;
+  }
+  updateHint(hit, mx, my);
+  canvas.style.cursor = hit !== null ? 'pointer' : drag ? 'grabbing' : 'grab';
+});
+
+canvas.addEventListener('mouseleave',()=>{
+  hoveredStar=null;
+  hoveredDso=null;
+  updateHint(null,0,0);
+});
+
+canvas.addEventListener('mousedown',e=>{
+  drag=true;
+  dragMoved=false;
+  lastX=e.clientX;
+  lastY=e.clientY;
+  document.getElementById('chk-autorot').checked = false;
+  opts.autoRot = false;
+});
+
+canvas.addEventListener('mouseup',e=>{
+  if(!dragMoved){
+    const hit=getHit(e.clientX, e.clientY);
+    if(hit){
+      if (hit.type === 'star') {
+        selectedStar = hit.index;
+        selectedDso = null;
+        openPanel(STARS[hit.index], 'star');
+      } else {
+        selectedDso = hit.index;
+        selectedStar = null;
+        openPanel(DEEP_SKY_OBJECTS[hit.index], 'dso');
+      }
+    } else {
+      closePanel();
+    }
+  }
+  drag=false;
+  dragMoved=false;
+});
+
+canvas.addEventListener('wheel',e=>{
+  zoom=Math.max(0.4, Math.min(3.5, zoom - e.deltaY * 0.0008));
+  e.preventDefault();
+},{passive:false});
+
+// Soporte Mobile/Touch
+canvas.addEventListener('touchstart',e=>{
+  if(e.touches.length===1){
+    drag=true;
+    dragMoved=false;
+    lastX=e.touches[0].clientX;
+    lastY=e.touches[0].clientY;
+    document.getElementById('chk-autorot').checked = false;
+    opts.autoRot = false;
+  }
+},{passive:true});
+
+canvas.addEventListener('touchmove',e=>{
+  if(drag && e.touches.length===1){
+    const mx = e.touches[0].clientX;
+    const my = e.touches[0].clientY;
+    if (opts.viewMode === 'sky') {
+      rotY -= (mx - lastX) * 0.0035;
+      rotX -= (my - lastY) * 0.0035;
+      rotX = Math.max(-Math.PI/2 + 0.02, Math.min(Math.PI/2 - 0.02, rotX));
+    } else {
+      rotY += (mx - lastX) * 0.004;
+      rotX += (my - lastY) * 0.004;
+    }
+    lastX = mx;
+    lastY = my;
+    dragMoved = true;
+  }
+},{passive:true});
+
+canvas.addEventListener('touchend',e=>{
+  if(!dragMoved && e.changedTouches.length===1){
+    const t=e.changedTouches[0];
+    const hit=getHit(t.clientX, t.clientY);
+    if(hit){
+      if (hit.type === 'star') {
+        selectedStar = hit.index;
+        selectedDso = null;
+        openPanel(STARS[hit.index], 'star');
+      } else {
+        selectedDso = hit.index;
+        selectedStar = null;
+        openPanel(DEEP_SKY_OBJECTS[hit.index], 'dso');
+      }
+    } else {
+      closePanel();
+    }
+  }
+  drag=false;
+  dragMoved=false;
+});
+
+// Control de filtros del HUD
+document.querySelectorAll('.ftag').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    filter = btn.dataset.f;
+    document.querySelectorAll('.ftag').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    hoveredStar=null;
+    hoveredDso=null;
+    if(selectedStar!==null && filter!=="Todas" && STARS[selectedStar].group!==filter){
+      selectedStar=null;
+      closePanel();
+    }
+  });
+});
+
+document
+.getElementById("search-btn")
+.addEventListener("click",searchStar);
+
+document
+.getElementById("star-search")
+.addEventListener("keydown",(e)=>{
+
+  if(e.key==="Enter"){
+
+      searchStar();
+
+  }
+
+});
+
+// Cambiar el modo de visualización: Globo vs Planetario
+function setViewMode(mode) {
+  opts.viewMode = mode;
+  document.getElementById('btn-mode-globe').classList.toggle('active', mode === 'globe');
+  document.getElementById('btn-mode-sky').classList.toggle('active', mode === 'sky');
+  
+  if (mode === 'sky') {
+    rotX = 0;
+    rotY = 0;
+  } else {
+    rotX = 0.28;
+    rotY = 0.2;
+  }
+}
+
+// Activar o desactivar las características del firmamento
+function toggleOpt(optName) {
+  if (optName in opts) {
+    if (optName === 'autoRot') {
+      opts.autoRot = document.getElementById('chk-autorot').checked;
+    } else if (optName === 'twinkle') {
+      opts.twinkle = document.getElementById('chk-twinkle').checked;
+    } else if (optName === 'constLines') {
+      opts.constLines = document.getElementById('chk-const-lines').checked;
+    } else if (optName === 'constLabels') {
+      opts.constLabels = document.getElementById('chk-const-labels').checked;
+    } else if (optName === 'milkyWay') {
+      opts.milkyWay = document.getElementById('chk-milky-way').checked;
+    } else if (optName === 'dsos') {
+      opts.dsos = document.getElementById('chk-dsos').checked;
+    } else if (optName === 'gridEq') {
+      opts.gridEq = document.getElementById('chk-grid-eq').checked;
+    } else if (optName === 'gridEc') {
+      opts.gridEc = document.getElementById('chk-grid-ec').checked;
+    }
+  }
+}
+
+let last=0;
+function loop(ts){
+  const dt=Math.min((ts-last)/1000,0.05);
+  last=ts;
+  
+  glowPhase += dt * 0.9;
+  
+  if(opts.autoRot) {
+    if (opts.viewMode === 'sky') {
+      rotY += dt * 0.025;
+    } else {
+      rotY += dt * 0.045;
+    }
+  }
+  
+  drawFrame();
+  requestAnimationFrame(loop);
+}
+
+resize();
+window.addEventListener('resize', resize);
+requestAnimationFrame(loop);
+
+
+
+</script>
+</body>
+</html>

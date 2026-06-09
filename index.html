@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>La Fisicarreta</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:'Outfit',sans-serif;
+  height:100vh;
+  overflow:hidden;
+
+  background:
+  radial-gradient(circle at center,
+  #08111f 0%,
+  #040913 50%,
+  #010308 100%);
+
+  color:white;
+}
+
+/* fondo estrellado */
+
+.stars{
+  position:absolute;
+  inset:0;
+  background-image:
+  radial-gradient(rgb(198, 230, 245) 1px, transparent 1px),
+  radial-gradient(white 1px, transparent 1px);
+
+  background-size:120px 120px;
+  background-position:0 0,60px 60px;
+
+  opacity:.25;
+}
+
+.milky{
+
+  position:absolute;
+  inset:0;
+
+  background-image:url("milkyway.jpg");
+
+  background-size:cover;
+  background-position:center;
+
+  opacity:.25;
+}
+
+
+/* contenido */
+
+.hero{
+  position:relative;
+  z-index:2;
+
+  height:100vh;
+
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+
+  text-align:center;
+
+  padding:20px;
+}
+
+.tagline{
+  color:#6dc4cf;
+
+  letter-spacing:.3em;
+  text-transform:uppercase;
+
+  margin-bottom:20px;
+
+  font-size:.8rem;
+}
+
+h1{
+  font-size:clamp(3rem,8vw,6rem);
+
+  letter-spacing:.15em;
+
+  margin-bottom:20px;
+}
+
+.subtitle{
+
+  max-width:700px;
+
+  color:rgba(255,255,255,.75);
+
+  line-height:1.8;
+
+  margin-bottom:50px;
+
+  font-size:1.1rem;
+}
+
+.stats{
+
+  display:flex;
+
+  gap:50px;
+
+  flex-wrap:wrap;
+
+  justify-content:center;
+
+  margin-bottom:60px;
+}
+
+.stat{
+  display:flex;
+  flex-direction:column;
+}
+
+.number{
+  color:#66bfcf;
+  font-size:3rem;
+  font-weight:700;
+}
+
+.label{
+  color:rgba(255,255,255,.6);
+  font-size:.9rem;
+}
+
+.enter-btn{
+
+  border:none;
+
+  padding:18px 42px;
+
+  border-radius:999px;
+
+  background:#3572e4;
+
+  color:black;
+
+  font-size:1rem;
+
+  font-weight:700;
+
+  cursor:pointer;
+
+  transition:.3s;
+}
+
+.enter-btn:hover{
+
+  transform:translateY(-4px);
+
+  box-shadow:
+  0 0 30px rgba(149, 215, 226, 0.4);
+}
+
+.footer{
+  position:absolute;
+
+  bottom:30px;
+
+  left:50%;
+
+  transform:translateX(-50%);
+
+  color:rgba(255,255,255,.4);
+
+  font-size:.85rem;
+}
+
+#space-fact{
+
+  margin-top:40px;
+
+  max-width:700px;
+
+  color:rgba(255,255,255,.65);
+
+  font-style:italic;
+
+  font-size:1rem;
+
+  line-height:1.6;
+
+  opacity:1;
+
+  transition:opacity 1.5s ease;
+}
+
+
+
+#transition-screen{
+
+  position:fixed;
+  inset:0;
+
+  background:#000;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  opacity:0;
+  visibility:hidden;
+
+  transition:all 1s ease;
+
+  z-index:99999;
+}
+
+#transition-screen.active{
+
+  opacity:1;
+  visibility:visible;
+}
+
+.transition-content{
+
+  display:flex;
+  flex-direction:column;
+
+  align-items:center;
+  justify-content:center;
+
+  text-align:center;
+}
+
+#transition-text{
+
+  color:#70b6d6;
+
+  margin-top:20px;
+
+  font-size:1rem;
+
+  letter-spacing:.08em;
+}
+
+.loader{
+
+  width:50px;
+  height:50px;
+
+  margin:0 auto;
+
+  border:3px solid rgba(255,255,255,.15);
+  border-top:3px solid #77bfd4;
+
+  border-radius:50%;
+
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+
+  from{
+    transform:rotate(0deg);
+  }
+
+  to{
+    transform:rotate(360deg);
+  }
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="stars"></div>
+<div class="milky"></div>
+
+<section class="hero">
+
+  <p class="tagline">
+    Del páramo a las estrellas
+  </p>
+
+  <h1>ARCTURUS</h1>
+
+  <p class="subtitle">
+    Explora estrellas, constelaciones y exoplanetas
+    mediante un observatorio virtual interactivo
+    inspirado en la astronomía moderna.
+  </p>
+
+  <div class="stats">
+
+    <div class="stat">
+      <span class="number">50+</span>
+      <span class="label">Estrellas reales</span>
+    </div>
+
+    <div class="stat">
+      <span class="number">20+</span>
+      <span class="label">Constelaciones</span>
+    </div>
+
+    <div class="stat">
+      <span class="number">5+</span>
+      <span class="label">Exoplanetas</span>
+    </div>
+
+  </div>
+
+  <button class="enter-btn" id="enter">
+    Entrar al observatorio
+  </button>
+
+  <p id="space-fact">
+  La luz de Arcturus tardó 37 años en llegar hasta ti.
+</p>
+
+</section>
+
+<div class="footer">
+  Proyecto de divulgación astronómica
+</div>
+
+<script>
+
+const messages = [
+
+"Calculando posición de las estrellas...",
+
+"Sincronizando bóveda celeste...",
+
+"Preparando observatorio virtual...",
+
+"Localizando exoplanetas cercanos...",
+
+"Consultando catálogo estelar..."
+
+];
+
+let i = 0;
+
+const interval = setInterval(() => {
+
+  i = (i + 1) % messages.length;
+
+  text.style.opacity = 0;
+
+  setTimeout(() => {
+
+      text.textContent = messages[i];
+
+      text.style.opacity = 1;
+
+  },500);
+
+},1000);
+
+document
+.getElementById("enter")
+.addEventListener("click",()=>{
+
+  const screen =
+  document.getElementById("transition-screen");
+
+  const text =
+  document.getElementById("transition-text");
+
+  text.textContent =
+  messages[Math.floor(Math.random()*messages.length)];
+
+  screen.classList.add("active");
+
+  setTimeout(()=>{
+
+    clearInterval(interval);
+
+    window.location.href="space.html";
+
+},3000);
+
+});
+
+</script>
+
+<script>
+
+const facts = [
+
+"Cada estrella que ves podría tener planetas.",
+
+"La luz de Arcturus tardó 37 años en llegar hasta la Tierra.",
+
+"Betelgeuse es tan grande que podría engullir la órbita de Júpiter.",
+
+"La Vía Láctea contiene cientos de miles de millones de estrellas.",
+
+"Quizás ahora mismo alguien observa nuestro Sol desde otro mundo.",
+
+"Polaris no siempre será la estrella polar.",
+
+"La luz de Sirio tarda 8.6 años en llegar hasta nosotros.",
+
+"Los elementos de tu cuerpo fueron creados en estrellas antiguas.",
+
+"Hay más estrellas en el universo observable que granos de arena en todas las playas de la Tierra.",
+
+"Cada átomo de hierro en tu sangre nació en una explosión estelar.",
+
+"Del páramo a las estrellas, todo está hecho del mismo polvo cósmico.",
+
+"La luz que observas esta noche comenzó su viaje antes de que nacieras.",
+
+"Cada estrella es un posible amanecer para otro mundo.",
+
+"Mirar el cielo también es mirar nuestro origen.",
+
+"Somos una forma en la que el universo aprende sobre sí mismo.",
+
+"67"
+
+];
+
+const factElement = document.getElementById("space-fact");
+
+let currentFact = 0;
+
+setInterval(() => {
+
+    factElement.style.opacity = 0;
+
+    setTimeout(() => {
+
+        let newFact;
+
+        do{
+            newFact = Math.floor(Math.random() * facts.length);
+        }
+        while(newFact === currentFact);
+
+        currentFact = newFact;
+
+        factElement.textContent = facts[currentFact];
+
+        factElement.style.opacity = 1;
+
+    },1500);
+
+},10000);
+</script>
+
+<div id="transition-screen">
+
+  <div class="transition-content">
+
+    <div class="loader"></div>
+
+    <p id="transition-text">
+      Calculando posición de las estrellas...
+    </p>
+
+  </div>
+
+</div>
+
+</body>
+</html>
