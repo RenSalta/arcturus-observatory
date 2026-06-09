@@ -1,7 +1,9 @@
 # Arcturus
 
 Observatorio virtual interactivo para explorar estrellas, constelaciones y exoplanetas.
+## Demo
 
+https://rensalta.github.io/arcturus-observatory/
 ## Características
 
 - Bóveda celeste interactiva
